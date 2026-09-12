@@ -1,0 +1,206 @@
+import type { AvatarPixelEffect } from '@koink/avatar-core'
+
+import type { AvatarCameraFrame } from './AvatarControls'
+import type { AvatarDropShadowStyle } from './InteractiveAvatar'
+import { renderPixelatedAvatarDataUrl } from './avatarPixelation'
+
+const SAVED_PRESETS_STORAGE_KEY = 'koink-avatar-saved-presets-v1'
+const MAX_SAVED_PRESETS = 12
+const SCREENSHOT_SIZE = 256
+
+export interface SavedAvatarPreset {
+  readonly createdAt: number
+  readonly id: string
+  readonly query: string
+  readonly screenshot: string
+  readonly version: 1
+}
+
+export interface AvatarCaptureOptions {
+  readonly background?: string
+  readonly frame?: AvatarCameraFrame
+  readonly frameShadow?: AvatarDropShadowStyle
+  readonly pixelEffect?: AvatarPixelEffect
+  readonly showFrameShadow?: boolean
+}
+
+const isSavedAvatarPreset = (value: unknown): value is SavedAvatarPreset => {
+  if (value == null || typeof value !== 'object') return false
+  const preset = value as Partial<SavedAvatarPreset>
+  return preset.version === 1 &&
+    typeof preset.id === 'string' &&
+    typeof preset.createdAt === 'number' &&
+    Number.isFinite(preset.createdAt) &&
+    typeof preset.query === 'string' &&
+    typeof preset.screenshot === 'string' &&
+    preset.screenshot.startsWith('data:image/')
+}
+
+export const loadSavedAvatarPresets = (): SavedAvatarPreset[] => {
+  if (typeof window === 'undefined') return []
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(SAVED_PRESETS_STORAGE_KEY) ?? '[]') as unknown
+    return Array.isArray(stored)
+      ? stored.filter(isSavedAvatarPreset).slice(0, MAX_SAVED_PRESETS)
+      : []
+  } catch {
+    return []
+  }
+}
+
+export const persistSavedAvatarPresets = (presets: readonly SavedAvatarPreset[]) => {
+  window.localStorage.setItem(
+    SAVED_PRESETS_STORAGE_KEY,
+    JSON.stringify(presets.slice(0, MAX_SAVED_PRESETS))
+  )
+}
+
+export const prependSavedAvatarPreset = (
+  presets: readonly SavedAvatarPreset[],
+  preset: SavedAvatarPreset
+) => [preset, ...presets].slice(0, MAX_SAVED_PRESETS)
+
+const getAvatarFramePath = (width: number, height: number, frame: AvatarCameraFrame) => {
+  if (frame === 'circle') {
+    const radius = Math.min(width, height) / 2
+    return `M ${width / 2} ${height / 2 - radius} A ${radius} ${radius} 0 1 1 ${width / 2} ${
+      height / 2 + radius
+    } A ${radius} ${radius} 0 1 1 ${width / 2} ${height / 2 - radius} Z`
+  }
+  if (frame === 'rounded') {
+    const radius = Math.min(width, height) * 18 / SCREENSHOT_SIZE
+    return `M ${radius} 0 H ${width - radius} Q ${width} 0 ${width} ${radius} V ${
+      height - radius
+    } Q ${width} ${height} ${width - radius} ${height} H ${radius} Q 0 ${height} 0 ${
+      height - radius
+    } V ${radius} Q 0 0 ${radius} 0 Z`
+  }
+  return `M 0 0 H ${width} V ${height} H 0 Z`
+}
+
+const applyAvatarCaptureFrame = (svg: SVGSVGElement, options: AvatarCaptureOptions) => {
+  if (options.background == null && options.frame == null) return
+
+  const viewBox = svg.viewBox.baseVal
+  const width = viewBox.width || Number(svg.getAttribute('width')) || SCREENSHOT_SIZE
+  const height = viewBox.height || Number(svg.getAttribute('height')) || SCREENSHOT_SIZE
+  const frame = options.frame ?? 'square'
+  const document = svg.ownerDocument
+  const namespace = 'http://www.w3.org/2000/svg'
+  const clipId = 'koink-avatar-export-frame'
+  const defs = document.createElementNS(namespace, 'defs')
+  const clipPath = document.createElementNS(namespace, 'clipPath')
+  const framePath = document.createElementNS(namespace, 'path')
+  const content = document.createElementNS(namespace, 'g')
+  const scene = document.createElementNS(namespace, 'g')
+
+  clipPath.setAttribute('id', clipId)
+  framePath.setAttribute('d', getAvatarFramePath(width, height, frame))
+  clipPath.append(framePath)
+  defs.append(clipPath)
+
+  content.setAttribute('clip-path', `url(#${clipId})`)
+  if (options.background != null) {
+    const background = document.createElementNS(namespace, 'path')
+    background.setAttribute('d', getAvatarFramePath(width, height, frame))
+    background.setAttribute('fill', options.background)
+    content.append(background)
+  }
+  while (svg.firstChild != null) scene.append(svg.firstChild)
+  content.append(scene)
+  svg.append(defs)
+  svg.append(content)
+}
+
+export const serializeAvatarSvg = (
+  sourceSvg: SVGSVGElement,
+  size: number,
+  options: AvatarCaptureOptions = {}
+) => {
+  const clonedSvg = sourceSvg.cloneNode(true) as SVGSVGElement
+  clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+  clonedSvg.setAttribute('width', String(size))
+  clonedSvg.setAttribute('height', String(size))
+  clonedSvg.removeAttribute('aria-label')
+  clonedSvg.removeAttribute('role')
+  clonedSvg.removeAttribute('tabindex')
+  applyAvatarCaptureFrame(clonedSvg, options)
+  return new XMLSerializer().serializeToString(clonedSvg)
+}
+
+export const renderAvatarSvgSource = async (
+  sourceSvg: SVGSVGElement,
+  size: number,
+  options: AvatarCaptureOptions = {}
+) => {
+  if (options.pixelEffect?.enabled !== true) return serializeAvatarSvg(sourceSvg, size, options)
+
+  const dataUrl = await renderPixelatedAvatarDataUrl(sourceSvg, size, options.pixelEffect)
+  const clonedSvg = sourceSvg.cloneNode(false) as SVGSVGElement
+  clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+  clonedSvg.setAttribute('width', String(size))
+  clonedSvg.setAttribute('height', String(size))
+  clonedSvg.removeAttribute('aria-label')
+  clonedSvg.removeAttribute('role')
+  clonedSvg.removeAttribute('tabindex')
+  const image = clonedSvg.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'image')
+  const viewBox = sourceSvg.viewBox.baseVal
+  image.setAttribute('href', dataUrl)
+  image.setAttribute('width', String(viewBox.width || size))
+  image.setAttribute('height', String(viewBox.height || size))
+  image.setAttribute('preserveAspectRatio', 'none')
+  image.setAttribute('style', 'image-rendering:pixelated')
+  clonedSvg.append(image)
+  applyAvatarCaptureFrame(clonedSvg, options)
+  return new XMLSerializer().serializeToString(clonedSvg)
+}
+
+export const renderAvatarCaptureCanvas = async (
+  sourceSvg: SVGSVGElement,
+  size: number,
+  options: AvatarCaptureOptions = {}
+) => {
+  const svgSource = await renderAvatarSvgSource(sourceSvg, size, options)
+  const sourceUrl = URL.createObjectURL(new Blob([svgSource], { type: 'image/svg+xml;charset=utf-8' }))
+  try {
+    const image = new Image()
+    image.src = sourceUrl
+    await image.decode()
+
+    const canvas = document.createElement('canvas')
+    canvas.width = size
+    canvas.height = size
+    const context = canvas.getContext('2d')
+    if (context == null) throw new Error('Unable to create avatar capture canvas')
+
+    context.drawImage(image, 0, 0, size, size)
+    return canvas
+  } finally {
+    URL.revokeObjectURL(sourceUrl)
+  }
+}
+
+export const renderAvatarPngBlob = async (
+  sourceSvg: SVGSVGElement,
+  size: number,
+  options: AvatarCaptureOptions = {}
+) => {
+  const canvas = await renderAvatarCaptureCanvas(sourceSvg, size, options)
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(blob => {
+      if (blob == null) {
+        reject(new Error('Unable to encode avatar PNG'))
+        return
+      }
+      resolve(blob)
+    }, 'image/png')
+  })
+}
+
+export const captureAvatarScreenshot = async (
+  sourceSvg: SVGSVGElement,
+  options: AvatarCaptureOptions = {}
+) => {
+  const canvas = await renderAvatarCaptureCanvas(sourceSvg, SCREENSHOT_SIZE, options)
+  return canvas.toDataURL('image/png')
+}
