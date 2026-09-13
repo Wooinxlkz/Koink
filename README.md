@@ -3,14 +3,17 @@
 A small ink-blob desktop companion for Windows, built with Tauri (Rust) +
 React + Tailwind + bun (same tooling as our other Tauri app).
 
-One window, two modes, switched with a small floating pill at the bottom:
+One window, two modes, switched with a small floating pill at the top-center:
 
 - **Companion** — the morphing mascot (14 states: idle, thinking, wink,
-  alert, sleep, burst, orbit, comet...), centered and idly floating.
+  alert, sleep, burst, orbit, comet...), with a real edit mode underneath
+  it: shape (8), color (12), and expression (16) pickers, all live previews
+  of the actual engine — see `src/components/BlobCustomizer.tsx`.
 - **Studio** — the original avatar app's own Home (species/breed/effect-style
-  gallery) plus its full geometric avatar editor (coat patterns, face,
-  camera, lighting, animation timeline, SVG/PNG/GIF export), rendered
-  full-bleed, hash-routed internally exactly like the source project.
+  gallery, plus a live Companion tile right in that same grid) plus its
+  full geometric avatar editor (coat patterns, face, camera, lighting,
+  animation timeline, SVG/PNG/GIF export), rendered full-bleed, hash-routed
+  internally exactly like the source project.
 
 The mode switcher is `position: fixed` rather than a normal nav bar — see
 the comment at the top of `src/App.tsx` for why that specific detail
@@ -20,7 +23,7 @@ height above it throws that off).
 
 ## Status
 
-`v0.1.0`. Windows is the only build target for now (see
+`v0.1.1`. Windows is the only build target for now (see
 `src-tauri/tauri.conf.json`'s `bundle.targets`).
 
 ## Getting started
@@ -44,6 +47,9 @@ src/
   App.tsx                     both modes, one window, floating pill switcher
   components/
     KoinkBlob.tsx               React wrapper around the blob-morph engine
+    BlobCustomizer.tsx           shape/color/expression picker (Companion's edit mode)
+  styles/
+    theme-tokens.scss            light/dark color tokens for the whole app
   engine/
     blob-core/                  framework-free morph engine (pure sample(t) fn)
     avatar-core/                 framework-neutral avatar catalog + definitions

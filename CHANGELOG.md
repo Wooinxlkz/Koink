@@ -187,3 +187,32 @@ entry point — see below).
 - "Rebuilding" the existing species/breed thumbnail images in the bento
   grid — those are the original project's real preset artwork, not
   something to regenerate blind.
+
+## [0.1.1]
+
+### Added
+
+- **A real edit mode for the Companion mascot** (`src/components/BlobCustomizer.tsx`):
+  shape picker (8 shapes), color picker (12 colors), and rest-expression
+  picker (16 expressions) — all live previews of the actual engine output
+  (`KoinkBlob` gained an `animate={false}` mode for cheap, non-looping
+  swatches), not stand-in icons. Previously Companion was just the mascot
+  plus state buttons with no way to actually customize it, despite bloub's
+  own source having this as a real feature — it just hadn't been ported.
+  Bloub's animation timeline, GIF/video export, and saved-preset gallery
+  are still not ported — see "Explicitly out of scope" below.
+- Real dark/light theme support for Companion mode specifically (separate
+  from Studio's, which round 4 already fixed): background and all button
+  states now have `dark:` variants, switched by the same `.dark` class /
+  theme toggle as Studio.
+- App logo updated everywhere it appears: Tauri app icons (all sizes),
+  taskbar/window icon, the Windows installer's own icon, the installer's
+  custom header/sidebar banner images, and the in-app favicon/Home-page
+  brand mark.
+
+### Explicitly out of scope this round
+
+- bloub's animation timeline editor, GIF/video export, and saved-preset
+  gallery (`Timeline.vue`, `ExportBar.vue`, `GifDialog.vue`, `BotTile.vue`
+  in the original source) — shape/color/expression was the concrete ask
+  this round; the rest is real, separate work if wanted next.

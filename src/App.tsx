@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { KoinkBlob } from './components/KoinkBlob'
+import { BlobCustomizer } from './components/BlobCustomizer'
 import { SEQUENCE, type StateId } from './engine/blob-core/states'
+import { DEFAULT_SHAPE, DEFAULT_COLOR, type ShapeId, type ColorId } from './engine/blob-core/skins'
+import { DEFAULT_EXPRESSION, type ExpressionId } from './engine/blob-core/expressions'
 import Root from './engine/avatar-app/Root'
 import { AvatarLocaleProvider } from './engine/avatar-app/avatarLocale'
 
@@ -45,42 +48,59 @@ function StudioGlyph({ active }: { active: boolean }) {
 }
 
 /**
- * One window, two modes — Companion (the mascot) and Studio (the vendored
- * avatar editor, its Home page as the app's main landing). The switcher
- * below is deliberately `fixed` (taken out of document flow) rather than a
- * normal nav row: Studio's own CSS sizes several of its elements against
- * the real `100vh`/`100vw`, so anything of ours that consumes *flow*
- * height above it throws that off by exactly that many pixels — that's
- * what caused the broken/overlapping look earlier on. A `fixed` overlay
- * floats on top without shrinking anyone's available height, so Root
- * still sees the full window either way.
+ * One window, two modes — Companion (the mascot, with a real shape/color/
+ * expression editor — see BlobCustomizer) and Studio (the vendored avatar
+ * editor, its Home page as the app's main landing). The switcher below is
+ * deliberately `fixed` (taken out of document flow) rather than a normal
+ * nav row: Studio's own CSS sizes several of its elements against the real
+ * `100vh`/`100vw`, so anything of ours that consumes *flow* height above it
+ * throws that off by exactly that many pixels — that's what caused the
+ * broken/overlapping look earlier on. A `fixed` overlay floats on top
+ * without shrinking anyone's available height, so Root still sees the full
+ * window either way.
  */
 export function App() {
   const [mode, setMode] = useState<Mode>('studio')
   const [state, setState] = useState<StateId>('idle')
+  const [shape, setShape] = useState<ShapeId>(DEFAULT_SHAPE as ShapeId)
+  const [color, setColor] = useState<ColorId>(DEFAULT_COLOR as ColorId)
+  const [expression, setExpression] = useState<ExpressionId>(DEFAULT_EXPRESSION as ExpressionId)
 
   return (
-    <div className="relative h-full w-full bg-koink-yellow">
+    <div className="relative h-full w-full">
       {mode === 'companion' ? (
-        <div className="flex h-full w-full flex-col items-center justify-center gap-6">
-          <div className="animate-float-y">
-            <KoinkBlob state={state} size={140} />
-          </div>
+        <div className="h-full w-full overflow-y-auto bg-koink-yellow dark:bg-koink-ink">
+          <div className="flex min-h-full w-full flex-col items-center gap-6 py-16">
+            <div className="animate-float-y">
+              <KoinkBlob state={state} shape={shape} color={color} expression={expression} size={130} />
+            </div>
 
-          <div className="flex flex-wrap justify-center gap-2 px-6">
-            {SEQUENCE.map(id => (
-              <button
-                key={id}
-                onClick={() => setState(id)}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                  state === id
-                    ? 'bg-koink-ink text-koink-paper'
-                    : 'bg-koink-ink/10 text-koink-ink hover:bg-koink-ink/20'
-                }`}
-              >
-                {STATE_LABELS[id] ?? id}
-              </button>
-            ))}
+            <div className="flex flex-wrap justify-center gap-2 px-6">
+              {SEQUENCE.map(id => (
+                <button
+                  key={id}
+                  onClick={() => setState(id)}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                    state === id
+                      ? 'bg-koink-ink text-koink-paper dark:bg-koink-paper dark:text-koink-ink'
+                      : 'bg-koink-ink/10 text-koink-ink hover:bg-koink-ink/20 dark:bg-koink-paper/10 dark:text-koink-paper dark:hover:bg-koink-paper/20'
+                  }`}
+                >
+                  {STATE_LABELS[id] ?? id}
+                </button>
+              ))}
+            </div>
+
+            <div className="my-2 h-px w-40 bg-koink-ink/10 dark:bg-koink-paper/10" />
+
+            <BlobCustomizer
+              shape={shape}
+              color={color}
+              expression={expression}
+              onShapeChange={setShape}
+              onColorChange={setColor}
+              onExpressionChange={setExpression}
+            />
           </div>
         </div>
       ) : (
