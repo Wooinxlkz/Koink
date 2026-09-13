@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Capabilities for Koink's main window",
-  "windows": ["main"],
+  "description": "Capabilities for Koink's windows",
+  "windows": ["main", "companion"],
   "permissions": [
     "core:default",
     "core:window:allow-set-always-on-top",

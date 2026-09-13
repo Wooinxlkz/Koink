@@ -12,10 +12,11 @@
       rel="stylesheet"
     />
     <!--
-      Tauri's window is transparent + undecorated (see src-tauri/tauri.conf.json),
-      so the actual visible "window chrome" is drawn by React (see
-      src/components/TitleBar.tsx). Keeping html/body transparent here is what
-      makes that possible.
+      Shared by both windows (see src-tauri/tauri.conf.json): the small
+      "companion" window is transparent/undecorated, so html/body/#root need
+      a transparent background there. The big "main" (Studio) window is a
+      normal opaque, decorated window — the vendored avatar app draws its
+      own background, so transparent html/body here is harmless for it too.
     -->
     <style>
       html, body, #root { height: 100%; background: transparent; }
