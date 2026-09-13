@@ -80,11 +80,39 @@ All notable changes to Koink are documented here. Format loosely follows
   original app's dead GitHub-link icon (`HomeHeaderActions.tsx`), which had
   been rendering with an empty href after the brand-string rename.
 
-### Known issues
+### Fixed (round 3)
 
+- **The floating black circle in your screenshot really was the blob** — but
+  not a rendering bug. The previous fix split Koink into two separate OS
+  windows (Studio + a small always-on-top Companion window) to solve the
+  `100vh` layout problem. That part worked, but it introduced a new problem:
+  two independent top-level windows don't know about each other's position,
+  so Companion (parked near the screen's top-left by default) ended up
+  visually sitting on top of Studio's sidebar whenever both were open —
+  exactly what you saw, and exactly why clicking the second avatar thumbnail
+  under it did nothing (the always-on-top companion window was intercepting
+  the click, not the thumbnail being broken).
+- Reverted to **one window, two modes**, switched by a small pill — but kept
+  the fix for the original bug: the pill is `position: fixed` (out of
+  document flow) instead of a normal nav row, so it floats over Studio's
+  content without stealing any layout height from it. Studio still gets a
+  full, correct `100vh`/`100vw` to size itself against.
+- Removed the non-functional dark-mode toggle from `HomeHeaderActions.tsx`
+  ("themes broken") — checked every vendored `.scss` file for a `.dark`
+  selector or `prefers-color-scheme` query; there is none, anywhere. The
+  button swapped its own icon and nothing else. Rather than leave dead UI in
+  place, it's gone; the language switcher next to it is real and stays.
+- Removed `src/components/CompanionApp.tsx` and the `companion` window
+  entry — folded back into `App.tsx` as the "companion" mode of the single
+  window.
+
+### Known issues (round 3)
+
+- "so fix colors" — no specifics were given for this one; if something's
+  still visually off, a screenshot with what looks wrong helps narrow it
+  down the way the rest of this round's fixes were: from an actual cause in
+  the code, not a guess.
+- Still no way to render/screenshot this on my end — every fix above is
+  traced from your screenshot and a read of the actual source, not verified
+  visually. Please keep sending screenshots of what's actually wrong.
 - No auto-update or code signing yet.
-- No visual QA pass has been possible on this end (no GUI/display in this
-  environment) — every fix above is verified by reading the actual CI error
-  and the screenshot, tracing it to a cause in the source, and confirming
-  the fix addresses that specific cause. Please screenshot the next build
-  too.

@@ -22,23 +22,6 @@
         "decorations": true,
         "transparent": false,
         "center": true
-      },
-      {
-        "label": "companion",
-        "title": "Koink Companion",
-        "url": "index.html?window=companion",
-        "width": 260,
-        "height": 260,
-        "minWidth": 180,
-        "minHeight": 180,
-        "resizable": true,
-        "decorations": false,
-        "transparent": true,
-        "shadow": false,
-        "alwaysOnTop": true,
-        "skipTaskbar": true,
-        "x": 60,
-        "y": 60
       }
     ],
     "security": {

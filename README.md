@@ -3,24 +3,20 @@
 A small ink-blob desktop companion for Windows, built with Tauri (Rust) +
 React + Tailwind + bun (same tooling as our other Tauri app).
 
-Koink is **two windows**, not one:
+One window, two modes, switched with a small floating pill at the bottom:
 
-- **Studio** (`main` window) — a normal, big, native-decorated window
-  (1200×800 by default, resizable), exactly the original avatar app's own
-  Home (species/breed/effect-style gallery) + full geometric editor (coat
-  patterns, face, camera, lighting, animation timeline, SVG/PNG/GIF export),
-  rendered full-bleed. This UI was built as a normal full-page website that
-  sizes several of its own elements against the real window — it needs a
-  real, roomy window to look right, so that's what it gets.
-- **Companion** (`companion` window) — a small (260×260), transparent,
-  undecorated, always-on-top window: just the morphing mascot. Drag it
-  anywhere, click it to cycle a few states, double-click to bring Studio
-  forward.
+- **Companion** — the morphing mascot (14 states: idle, thinking, wink,
+  alert, sleep, burst, orbit, comet...), centered and idly floating.
+- **Studio** — the original avatar app's own Home (species/breed/effect-style
+  gallery) plus its full geometric avatar editor (coat patterns, face,
+  camera, lighting, animation timeline, SVG/PNG/GIF export), rendered
+  full-bleed, hash-routed internally exactly like the source project.
 
-Both are declared in `src-tauri/tauri.conf.json`; a single Vite bundle
-serves both (`src/main.tsx` checks which window it's in via a `?window=`
-query flag and renders the right React tree — see `src/App.tsx` vs.
-`src/components/CompanionApp.tsx`).
+The mode switcher is `position: fixed` rather than a normal nav bar — see
+the comment at the top of `src/App.tsx` for why that specific detail
+matters here (short version: Studio's own CSS sizes things against the
+real `100vh`/`100vw`, so anything of ours that consumes actual layout
+height above it throws that off).
 
 ## Status
 
@@ -45,9 +41,8 @@ The installer ends up under `src-tauri/target/release/bundle/`.
 
 ```
 src/
-  App.tsx                     Studio window content (full-bleed Root)
+  App.tsx                     both modes, one window, floating pill switcher
   components/
-    CompanionApp.tsx           Companion window content (just the mascot)
     KoinkBlob.tsx               React wrapper around the blob-morph engine
   engine/
     blob-core/                  framework-free morph engine (pure sample(t) fn)
@@ -55,12 +50,21 @@ src/
     avatar-react/                 React editor/renderer built on avatar-core
     avatar-app/                   the editor's own UI: Home gallery, Root
                                   router, controls/panels, export — used
-                                  almost as-is, full-bleed in its own window
+                                  almost as-is
 ```
 
 `engine/` holds code adapted from two open-source projects (see
 `THIRD_PARTY_NOTICES.md`) — the *engines* are third-party-derived, everything
-around them (the two-window shell, branding, packaging) is Koink's own.
+around them (the app shell, branding, packaging) is Koink's own.
+
+## Known gaps in the vendored editor
+
+- The original theme toggle (moon icon) was removed — nothing in the
+  vendored CSS actually responds to a `.dark` class, so it did nothing but
+  swap its own icon. Language switching is real and still there.
+- The bottom-right rainbow ring in Studio isn't ours — it's the original
+  app's own camera-orientation gizmo (`AvatarOrientationControl.tsx`); drag
+  it to rotate the avatar's view.
 
 ## Release process
 
