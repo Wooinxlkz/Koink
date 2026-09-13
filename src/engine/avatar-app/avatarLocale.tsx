@@ -556,7 +556,7 @@ const ZH_HANS_TRANSLATIONS: Readonly<Record<string, string>> = {
   'Show resources sidebar': '展开资源侧栏',
   'Show controls': '展开控制栏',
   'Show controls sidebar': '展开控制侧栏',
-  'Koink Avatar home': 'Koink Avatar 首页',
+  'Koink home': 'Koink 首页',
   'Opening editor': '正在打开编辑器',
   'Palette': '配色',
   'Palette presets': '配色预设',

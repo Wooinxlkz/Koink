@@ -1,4 +1,6 @@
-@use '@koink/route-layout/design-tokens.css';
+// Base color tokens now come from src/styles/theme-tokens.scss (imported
+// globally in main.tsx) instead of the external route-layout package this
+// originally used — see that file for why.
 
 .koink-avatar-editor {
   box-sizing: border-box;

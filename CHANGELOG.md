@@ -116,3 +116,74 @@ All notable changes to Koink are documented here. Format loosely follows
   traced from your screenshot and a read of the actual source, not verified
   visually. Please keep sending screenshots of what's actually wrong.
 - No auto-update or code signing yet.
+
+## [0.1.0] — round 4
+
+### Fixed — real root cause of "colors are broken" and "theme toggle doesn't work"
+
+Both complaints turned out to be the same underlying bug. Every color in the
+vendored editor UI is a `var(--bg-color)`/`var(--text-color)`/etc. reference
+— but **no base/light value for any of those tokens exists anywhere in the
+vendored source**. In the original monorepo they came from an external,
+unpublished-to-us package (`@oneworks/route-layout`'s `design-tokens.css`),
+pulled in by a file (`avatar-react/editor.scss`) we'd actually stopped using
+once Studio switched to rendering `Root` directly. Only a `.dark` *override*
+block existed (with real values), scoped to a wrapper class
+(`.koink-avatar-editor > .avatar-app.dark`) that also isn't part of our
+render path anymore — so toggling `.dark` on `<html>` (what the old button
+did) never matched anything, on top of the base tokens being undefined to
+begin with. Two independent, compounding gaps, not one bug.
+
+Fixed by defining both themes ourselves, self-contained, in
+`src/styles/theme-tokens.scss` (`:root` for light, `:root.dark` for dark —
+the dark values are the real ones lifted from the original override block,
+not guesses). Imported globally in `main.tsx`. The theme toggle is back in
+`HomeHeaderActions.tsx`, now actually wired to something real, and the app
+now inherits the OS's light/dark preference on first launch (matching a
+`prefers-color-scheme` check found in the original app's own now-deleted
+entry point — see below).
+
+### Changed
+
+- Deleted `src/engine/avatar-app/main.tsx` and its `base.scss` — these were
+  the *original* app's own entry point, vendored along with everything else
+  but never actually used (our own `src/main.tsx` is the real entry point).
+  Harmless as dead code, but confusing to have two files named `main.tsx` in
+  the project, and its `base.scss` had the same broken external-package
+  import as `editor.scss` did. Its one good idea (default to OS light/dark
+  preference) is now in our real `main.tsx`.
+- Studio's Home page is now the app's default/landing view (was Companion).
+- Removed "Koink Avatar" as displayed text/aria-label (was "Koink" +
+  generic placeholder mark before; the original repo's own generic SVG
+  logo mark in the Home header is now the real Koink logo).
+- Added a live Companion tile to Studio's own explore grid (renders an
+  actual animated `KoinkBlob`, not a static image) — clicking it switches
+  to Companion mode. `Root` now accepts an optional `onOpenCompanion` prop,
+  threaded through to `HomePage`.
+- Moved the mode-switcher pill from bottom-center to top-center, and gave
+  each tab a small icon glyph matching Koink's own visual language.
+
+### Confirmed
+
+- Re-diffed both uploaded zips (`avatar-main.zip`, `bloub-main.zip`) against
+  what's vendored in `src/engine/` — byte-identical, nothing missing.
+
+### Installer
+
+- `src-tauri/installer/header.bmp` (150×57) and `sidebar.bmp` (164×314),
+  generated from the real logo at the exact dimensions NSIS requires, wired
+  into `tauri.conf.json`'s `bundle.windows.nsis` (`headerImage`,
+  `sidebarImage`, `installerIcon`) — the installer itself now has Koink's
+  branding, not NSIS's defaults.
+
+### Explicitly out of scope this round
+
+- A full icon pass across the vendored editor's *internal* UI (the dozens
+  of `@material-symbols` icons throughout `AvatarControls`, `AnimationPanel`,
+  `ExportToolbar`, etc.) — only the mode-switcher pill's own icons were
+  redone. Changing icons across a UI this size without being able to render
+  and check it visually is how the last few rounds of real bugs happened;
+  flagging this honestly rather than guessing at it too.
+- "Rebuilding" the existing species/breed thumbnail images in the bento
+  grid — those are the original project's real preset artwork, not
+  something to regenerate blind.

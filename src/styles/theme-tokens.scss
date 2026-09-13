@@ -1,0 +1,60 @@
+// The vendored avatar-app UI (AvatarControls, AnimationPanel, HomePage, etc.)
+// consumes these custom properties everywhere via var(--bg-color) and
+// friends, but never *defines* a base/light value for them anywhere in the
+// source we have — only a `.dark` override block exists (originally in
+// avatar-react/editor.scss), reusing an external, unpublished-to-us
+// "route-layout/design-tokens.css" package for the light values. Rather
+// than depend on a beta external package we can't inspect, this defines
+// both themes ourselves, self-contained. The dark values below are lifted
+// unchanged from that original `.dark` override block; the light values
+// are new, chosen to match the same semantic roles.
+
+:root {
+  --bg-color: #ffffff;
+  --sub-bg-color: #f5f5f5;
+  --sub-sub-bg-color: #ececec;
+  --text-color: #141414;
+  --sub-text-color: #8c8c8c;
+  --sub-sub-text-color: #595959;
+  --border-color: #e8e8e8;
+  --sub-border-color: #d9d9d9;
+  --sub-sub-border-color: #bfbfbf;
+  --placeholder-color: #bfbfbf;
+  --tag-bg: #f5f5f5;
+  --tag-hover-bg: #ececec;
+  --code-bg: #f1f5f9;
+  --code-border: #cbd5e1;
+  --star-color: #faad14;
+  --primary-color: #e23f12;
+  --primary-soft-bg: color-mix(in srgb, var(--primary-color) 12%, var(--bg-color));
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --primary-text-color: color-mix(in srgb, var(--primary-color) 82%, var(--text-color));
+  --danger-color: #ef4444;
+  --app-chrome-overlay-background: color-mix(in srgb, var(--bg-color) 88%, transparent);
+}
+
+:root.dark {
+  --app-chrome-overlay-background: color-mix(in srgb, var(--bg-color) 42%, transparent);
+  --bg-color: #141414;
+  --sub-bg-color: #262626;
+  --sub-sub-bg-color: #303030;
+  --text-color: #ffffff;
+  --sub-text-color: #8c8c8c;
+  --sub-sub-text-color: #a5a5a5;
+  --border-color: #303030;
+  --sub-border-color: #434343;
+  --sub-sub-border-color: #595959;
+  --placeholder-color: #575859;
+  --tag-bg: #1f1f1f;
+  --tag-hover-bg: #262626;
+  --code-bg: #1e293b;
+  --code-border: #334155;
+  --star-color: #ffb81c;
+  --primary-color: #e23f12;
+  --primary-soft-bg: color-mix(in srgb, var(--primary-color) 12%, var(--bg-color));
+  --success-color: #2dd4bf;
+  --warning-color: #f59e0b;
+  --primary-text-color: color-mix(in srgb, var(--primary-color) 82%, var(--text-color));
+  --danger-color: #f87171;
+}

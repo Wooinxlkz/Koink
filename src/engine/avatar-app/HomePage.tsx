@@ -8,6 +8,7 @@ import { HOME_EXPLORE_TEMPLATES, HOME_TEMPLATES } from './avatarHome'
 import type { HomeTemplateId } from './avatarHome'
 import type { AvatarEffectStylePresetId } from './avatarEffectStylePresets'
 import { useAvatarLocale } from './avatarLocale'
+import { KoinkBlob } from '../../components/KoinkBlob'
 
 const HomeAvatarPreview = lazy(() => import('./HomeAvatarPreview'))
 
@@ -17,6 +18,8 @@ interface HomePageProps {
   readonly onCreateEffectStyle: (entity: HomeTemplateId, effectStyle: AvatarEffectStylePresetId) => void
   readonly onSurprise: () => void
   readonly onPrepareEditor: () => void
+  /** Renders a live Companion tile in the explore grid when provided. */
+  readonly onOpenCompanion?: () => void
 }
 
 const getWrappedIndex = (index: number) => (
@@ -57,7 +60,8 @@ export const HomePage = ({
   onCreateBreed,
   onCreateEffectStyle,
   onSurprise,
-  onPrepareEditor
+  onPrepareEditor,
+  onOpenCompanion
 }: HomePageProps) => {
   const { t } = useAvatarLocale()
   const [activeIndex, setActiveIndex] = useState(0)
@@ -156,13 +160,9 @@ export const HomePage = ({
   return (
     <main className='avatar-home'>
       <header className='avatar-home__header'>
-        <a className='avatar-home__brand' href='/' aria-label={t('Koink Avatar home')}>
-          <svg viewBox='0 0 32 32' aria-hidden='true'>
-            <rect x='3' y='3' width='26' height='26' rx='9' />
-            <rect x='9' y='11' width='4' height='10' rx='2' />
-            <rect x='19' y='11' width='4' height='10' rx='2' />
-          </svg>
-          <span>Koink Avatar</span>
+        <a className='avatar-home__brand' href='/' aria-label={t('Koink home')}>
+          <img src='/favicon.png' alt='' width={32} height={32} />
+          <span>Koink</span>
         </a>
         <div className='avatar-home__header-actions'>
           <HomeHeaderActions />
@@ -313,6 +313,20 @@ export const HomePage = ({
         aria-label={t('All avatars')}
       >
         <div className='avatar-home__explore-grid'>
+          {onOpenCompanion != null && (
+            <button
+              key='companion'
+              className='avatar-home__explore-item'
+              type='button'
+              data-size='large'
+              aria-label={t('Open Companion')}
+              title={t('Companion')}
+              onClick={onOpenCompanion}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fcc802' }}
+            >
+              <KoinkBlob state='idle' size={64} followPointer={false} />
+            </button>
+          )}
           {HOME_EXPLORE_TEMPLATES.map(template => (
             <button
               key={template.id}

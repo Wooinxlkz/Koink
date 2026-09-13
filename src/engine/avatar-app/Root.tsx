@@ -26,7 +26,12 @@ const replaceLocation = (query: string, hash: string) => {
   window.history.pushState(null, '', url)
 }
 
-const Root = () => {
+interface RootProps {
+  /** Passed straight through to HomePage's Companion tile, if provided. */
+  readonly onOpenCompanion?: () => void
+}
+
+const Root = ({ onOpenCompanion }: RootProps) => {
   const { t } = useAvatarLocale()
   const [editorOpen, setEditorOpen] = useState(isEditorLocation)
   const randomEditorOpeningRef = useRef(false)
@@ -124,6 +129,7 @@ const Root = () => {
       }}
       onSurprise={openRandomEditor}
       onPrepareEditor={() => void loadEditor()}
+      onOpenCompanion={onOpenCompanion}
     />
   )
 }
