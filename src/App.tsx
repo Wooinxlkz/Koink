@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { TitleBar } from './components/TitleBar'
 import { KoinkBlob } from './components/KoinkBlob'
 import { SEQUENCE, type StateId } from './engine/blob-core/states'
-import { AvatarEditor } from './engine/avatar-react/editor'
+import Root from './engine/avatar-app/Root'
+import { AvatarLocaleProvider } from './engine/avatar-app/avatarLocale'
 
 type View = 'companion' | 'studio'
 
@@ -93,7 +94,14 @@ export function App() {
               transition={{ duration: 0.18 }}
               className="h-full"
             >
-              <AvatarEditor className="h-full" theme="system" />
+              {/*
+                Root is the original app's own Home (species/breed/effect-style
+                gallery) + editor, hash-routed internally — the full experience,
+                not just the bare editor component.
+              */}
+              <AvatarLocaleProvider initialLocale="en" persist={false}>
+                <Root />
+              </AvatarLocaleProvider>
             </motion.div>
           )}
         </AnimatePresence>

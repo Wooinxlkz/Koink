@@ -119,7 +119,7 @@ const Root = () => {
         openEditor(`?${params.toString()}`)
       }}
       onCreateEffectStyle={(entity, effectStyle) => {
-        const params = new URLSearchParams({ effectStyle, template: entity })
+        const params = new URLSearchParams({ effectStyle: String(effectStyle), template: String(entity) })
         openEditor(`?${params.toString()}`)
       }}
       onSurprise={openRandomEditor}
