@@ -3,12 +3,17 @@
 A small ink-blob desktop companion for Windows, built with Tauri (Rust) +
 React + Tailwind + bun (same tooling as our other Tauri app).
 
-One window, two modes, switched with a small floating pill at the top-center:
+One window, three modes, switched with a small floating pill at the
+top-center (theme toggle and language switcher live right next to it,
+shared across all three):
 
-- **Companion** — the morphing mascot (14 states: idle, thinking, wink,
-  alert, sleep, burst, orbit, comet...), with a real edit mode underneath
-  it: shape (8), color (12), and expression (16) pickers, all live previews
-  of the actual engine — see `src/components/BlobCustomizer.tsx`.
+- **Home** — the app's front door: two cards, pick Companion or Studio.
+- **Companion** — the morphing mascot in its own real workspace (a left
+  sidebar rail, like Studio's), not just floating controls: Customize
+  (shape × 8, color × 12, expression × 16 — all live previews of the actual
+  engine, see `src/components/BlobCustomizer.tsx`), Animations (the 14
+  states), and Settings (follow-cursor toggle). See
+  `src/components/CompanionWorkspace.tsx`.
 - **Studio** — the original avatar app's own Home (species/breed/effect-style
   gallery, plus a live Companion tile right in that same grid) plus its
   full geometric avatar editor (coat patterns, face, camera, lighting,
@@ -23,7 +28,7 @@ height above it throws that off).
 
 ## Status
 
-`v0.1.1`. Windows is the only build target for now (see
+`v0.1.2`. Windows is the only build target for now (see
 `src-tauri/tauri.conf.json`'s `bundle.targets`).
 
 ## Getting started
@@ -44,10 +49,12 @@ The installer ends up under `src-tauri/target/release/bundle/`.
 
 ```
 src/
-  App.tsx                     both modes, one window, floating pill switcher
+  App.tsx                     three modes, one window, floating pill + theme/lang
   components/
     KoinkBlob.tsx               React wrapper around the blob-morph engine
-    BlobCustomizer.tsx           shape/color/expression picker (Companion's edit mode)
+    BlobCustomizer.tsx           shape/color/expression picker
+    CompanionWorkspace.tsx        Companion's sidebar-rail workspace layout
+    HomeLanding.tsx               the app's own front-door tab
   styles/
     theme-tokens.scss            light/dark color tokens for the whole app
   engine/
@@ -65,12 +72,20 @@ around them (the app shell, branding, packaging) is Koink's own.
 
 ## Known gaps in the vendored editor
 
-- The original theme toggle (moon icon) was removed — nothing in the
-  vendored CSS actually responds to a `.dark` class, so it did nothing but
-  swap its own icon. Language switching is real and still there.
+- Species/breed names in Studio (Bear, Tiger, Panda, etc.) always display
+  in English regardless of language — the original app generates these
+  from internal IDs rather than passing them through translation, so
+  there's no dictionary entry to add. Everything else in the UI is fully
+  covered in both languages (verified by diffing every `t()` call site
+  against the dictionary programmatically, not by spot-checking).
 - The bottom-right rainbow ring in Studio isn't ours — it's the original
   app's own camera-orientation gizmo (`AvatarOrientationControl.tsx`); drag
   it to rotate the avatar's view.
+- The reference engine's animation timeline editor, GIF/video export, and
+  saved-preset gallery aren't ported — Companion's workspace covers shape/color/
+  expression (Customize), the 14 built-in states (Animations), and a
+  follow-cursor toggle (Settings), matching the reference engine's own
+  three-panel sidebar structure, but not those three larger features.
 
 ## Release process
 

@@ -3,7 +3,6 @@ import './HomePage.scss'
 import { lazy, Suspense, useRef, useState } from 'react'
 import type { CSSProperties, KeyboardEvent, PointerEvent } from 'react'
 
-import { HomeHeaderActions } from './HomeHeaderActions'
 import { HOME_EXPLORE_TEMPLATES, HOME_TEMPLATES } from './avatarHome'
 import type { HomeTemplateId } from './avatarHome'
 import type { AvatarEffectStylePresetId } from './avatarEffectStylePresets'
@@ -164,9 +163,6 @@ export const HomePage = ({
           <img src='/favicon.png' alt='' width={32} height={32} />
           <span>Koink</span>
         </a>
-        <div className='avatar-home__header-actions'>
-          <HomeHeaderActions />
-        </div>
       </header>
 
       <section className='avatar-home__hero' aria-labelledby='avatar-home-title'>

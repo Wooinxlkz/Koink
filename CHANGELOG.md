@@ -216,3 +216,66 @@ entry point — see below).
   gallery (`Timeline.vue`, `ExportBar.vue`, `GifDialog.vue`, `BotTile.vue`
   in the original source) — shape/color/expression was the concrete ask
   this round; the rest is real, separate work if wanted next.
+
+## [0.1.2]
+
+### Added
+
+- **Companion is now a real workspace**, not a handful of floating swatches
+  (`src/components/CompanionWorkspace.tsx`): a left sidebar rail switches
+  between three panels — Customize (shape/color/expression, from 0.1.1),
+  Animations (state picker, moved here from its old spot), and Settings
+  (a real, working "follow cursor" toggle) — with the live mascot preview
+  always visible regardless of which panel is open. This mirrors the
+  reference engine's own three-view sidebar structure (see
+  `THIRD_PARTY_NOTICES.md`), the same idea Studio's own sidebar uses, not
+  the bare centered layout from 0.1.1.
+- **Theme toggle and language switcher are now shared, global controls** —
+  previously they only existed inside Studio's own Home page and were
+  nowhere else. Moved next to the mode-switcher pill at the top of the
+  window, visible and working in all three modes now, wired to the same
+  `HomeHeaderActions` component (no logic duplicated, just relocated and
+  reused). Removed the now-redundant copy from inside `HomePage.tsx`'s own
+  header so there's exactly one of each control, not two.
+- **A real third tab: Home** (`src/components/HomeLanding.tsx`) — two big
+  cards, Companion and Studio, answering "which one do you want" before
+  either loads. This is separate from Studio's own internal Home (the
+  species/breed gallery), which is still there once you're inside Studio —
+  Home is the app's front door, Studio's Home is what's inside that room.
+  App now opens on this tab by default.
+
+### Changed
+
+- `AvatarLocaleProvider` now wraps the whole app once, at the top level,
+  instead of only around `Root` — needed so the shared theme/language
+  controls (usable from any tab) have the locale context they depend on.
+
+### Fixed (patch, same 0.1.2 — language switching)
+
+Audited every single translatable string in the app against the Chinese
+dictionary programmatically (extracted all `t('...')` call sites across
+every vendored file, diffed against the dictionary's keys) rather than
+guessing at the cause. Findings:
+
+- **The dictionary itself was 99% complete already** (740 entries covering
+  effectively all 189 distinct call sites found) — this was never "barely
+  translated." The actual gaps were 3 specific strings: `'Companion'` and
+  `'Open Companion'` (added by us in round 4, for the Companion tile in
+  Studio's Home grid — new strings we added but never added translations
+  for), and a pre-existing bare `'Delete'` used in one aria-label. All 3
+  now have entries.
+- **The real "switching doesn't work" bug**: our own `App.tsx` was wrapping
+  the whole app in `<AvatarLocaleProvider initialLocale="en" persist={false}>`
+  — meaning every launch was hard-forced to English regardless of what
+  you'd picked last time, *and* picking a different language never saved
+  anywhere, so it silently reverted on next launch. Fixed by dropping both
+  overrides — the provider's own default behavior (check saved preference,
+  then OS language, then fall back to English; save whatever you pick) now
+  actually runs.
+- **Known limitation, not a bug**: species/breed names in Studio (Bear,
+  Tiger, Panda, etc.) always display in English regardless of language —
+  this is the original app's own design, not something translated by the
+  dictionary at all (they're generated from internal IDs, not passed
+  through the translation function). Full localization of those would mean
+  building a separate name-translation table from scratch; flagging this
+  honestly rather than claiming it's fixed.
