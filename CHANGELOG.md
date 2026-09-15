@@ -409,3 +409,14 @@ simpler. No zoom control on the ruler yet either (fixed scale).
   was built in. GIF export doesn't have that constraint (`gifenc` was
   already a dependency) and is what's built. This is a real, structural
   reason, not a scope choice.
+
+### Fixed (patch, same 0.1.5 — build error)
+
+`gifExport.ts`'s final `Blob` construction failed `tsc` on a real build:
+`encoder.bytes()` types as `Uint8Array<ArrayBufferLike>`, which newer
+TypeScript DOM lib types (this project is on 5.9) reject for `BlobPart` —
+it specifically wants `ArrayBufferView<ArrayBuffer>`, narrower than
+`ArrayBufferLike` (which also covers `SharedArrayBuffer`). This project's
+own `avatarGifExport.tsx` already had the exact same line and already
+worked around it (`Uint8Array.from(encoder.bytes()).buffer`); I didn't
+carry that same fix over when writing the new file. Now it matches.

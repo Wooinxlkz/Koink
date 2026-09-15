@@ -140,7 +140,11 @@ export async function exportGif(options: GifExportOptions): Promise<Blob> {
   }
 
   encoder.finish()
-  return new Blob([encoder.bytes()], { type: 'image/gif' })
+  // encoder.bytes() types as Uint8Array<ArrayBufferLike>, which newer
+  // TS DOM lib types reject for BlobPart (it wants a concrete ArrayBuffer,
+  // not the wider ArrayBufferLike that also covers SharedArrayBuffer).
+  // Same fix this project's own Studio export code already uses.
+  return new Blob([Uint8Array.from(encoder.bytes()).buffer], { type: 'image/gif' })
 }
 
 /** Triggers a browser download for a Blob — no extra dependency needed. */
