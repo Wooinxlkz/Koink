@@ -1,6 +1,6 @@
 [package]
 name = "koink"
-version = "0.1.2"
+version = "0.1.5"
 description = "Koink — a small ink-blob desktop companion"
 authors = ["you"]
 edition = "2021"

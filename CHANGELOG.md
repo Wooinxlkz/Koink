@@ -279,3 +279,133 @@ guessing at the cause. Findings:
   through the translation function). Full localization of those would mean
   building a separate name-translation table from scratch; flagging this
   honestly rather than claiming it's fixed.
+
+## [0.1.3]
+
+### Changed — Companion now has its own dedicated folder
+
+`src/companion/` — `KoinkBlob.tsx`, `BlobCustomizer.tsx`,
+`CompanionWorkspace.tsx`, and `engine/` (moved from `src/engine/blob-core/`)
+all live together now, separate from Studio's `src/engine/avatar-*`.
+Previously Companion's components sat loose in `src/components/` while its
+engine sat under `src/engine/` alongside Studio's three engines — one flat
+pile, not two separate things. All import paths across the project updated
+accordingly; nothing about how either mode behaves changed from this move
+alone.
+
+### Fixed
+
+- **Cursor-following was actually inverted**, not just unpolished: the
+  reference engine's own gaze module (`src/ui/gaze.ts`) is explicit that
+  positive pitch means looking *up*, while screen Y increases *downward* —
+  so mapping vertical cursor offset straight to pitch without a minus sign
+  (what the old code did) makes the mascot look up when your cursor moves
+  down, and vice versa. Fixed using that module's own tuned values (16°
+  max yaw, 13° max pitch, 10° baseline "attentive" pitch) instead of the
+  guessed multipliers from round 4.
+- Colors themselves were re-checked against the reference palette's hex
+  values — those were already correct; no separate color bug found beyond
+  the gaze direction, which does make color *choices* on the customizer
+  swatches easier to see correctly now that hover/tracking behaves
+  predictably.
+
+### Performance
+
+- Studio (`engine/avatar-app/Root.tsx` and everything under it — tens of
+  thousands of lines, plus ~7.6MB of preset-snapshot SVGs) is now
+  code-split via `React.lazy()` + `Suspense` instead of bundled eagerly.
+  Home and Companion (the default tab and the one most people will use
+  most) no longer pay to load or parse any of Studio's weight until Studio
+  is actually opened for the first time.
+
+### Logo
+
+- Re-verified pixel-for-pixel against the provided source (confirmed
+  byte-identical to what round 5 already applied — the file hash differs
+  only because of PNG re-encoding, not the artwork), then regenerated
+  every derived asset fresh anyway: all Tauri icon sizes, the installer's
+  icon and header/sidebar banners, and the in-app favicon. If the icon
+  still looks unchanged in Windows Explorer/taskbar after installing this
+  build, that's very likely Windows' own icon cache holding a stale image
+  — not this build — and clearing it (or a reboot) resolves that
+  independently of anything here.
+
+## [0.1.4]
+
+### Added — the real Animations panel (cycle/timeline editor)
+
+The "Animations" panel was a flat list of 14 buttons — pick one, it plays.
+That's not what the reference engine's own Animations view is: it's a real
+sequence editor. Custom cycles — named sequences of states, each held for
+a duration you choose — that save, switch, rename, and delete, matching
+what the SideRail's three views (Customize / Animations / Settings) mean
+in the original.
+
+- `src/companion/AnimationTimeline.tsx` — cycle switcher (create, rename,
+  delete, select), a proportionally-scaled block track with a ruler,
+  play/pause, per-block duration adjustment, reordering, and an add-block
+  palette of all 14 states.
+- `src/companion/useCyclePlayback.ts` — drives which state should be
+  showing at the current point in a cycle's playback, scheduling exactly
+  one timer per block transition rather than polling every frame.
+- `src/companion/cycleStorage.ts` — guarded localStorage read/write (same
+  safety pattern as the reference's own storage module: a blocked or full
+  localStorage must never crash the app, only lose persistence), under our
+  own `koink:companion:` key prefix.
+- `src/companion/engine/timelineLayout.ts` — direct port of the reference's
+  own pure ruler/zoom/tick-formatting math.
+- The underlying data model — blocks, cycles, validation, storage parsing
+  — is `cycles.ts`, already vendored since round 1 and unmodified: not a
+  reimplementation, the actual vetted logic.
+
+**Built differently from the reference on purpose, where it matters for
+correctness without visual testing:** block reordering uses move-earlier/
+move-later buttons instead of free dragging, duration adjustment uses
++/− stepper buttons instead of a drag handle, and renaming a cycle uses a
+plain prompt instead of a custom dialog. The data model and behavior are
+the same; the interaction polish for those three specific things is
+simpler. No zoom control on the ruler yet either (fixed scale).
+
+### Fixed
+
+- **Cursor-following was inverted** in `src/companion/KoinkBlob.tsx` — the
+  reference gaze module is explicit that positive pitch means looking up
+  while screen Y increases downward, so the vertical mapping needed a
+  minus sign that the previous code didn't have: moving the cursor down
+  made the mascot look up. Fixed using the reference's own tuned constants
+  (16° max yaw, 13° max pitch, 10° baseline "attentive" pitch) instead of
+  guessed multipliers.
+
+### Explicitly still not done
+
+- GIF/video export (`ExportBar.vue`, `GifDialog.vue`, `capture.ts`,
+  `video.ts` in the reference) — a separate, substantial piece involving
+  offscreen rendering, canvas capture, and encoding. Not attempted this
+  round; real work, not a quick add.
+
+## [0.1.5]
+
+### Added — GIF export
+
+- `src/companion/gifExport.ts` — exports either the current state's natural
+  idle motion (3 seconds, looping) or a full custom cycle as a GIF. Same
+  `gifenc` call pattern (`quantize` → `applyPalette` → `writeFrame`,
+  transparent-index handling) already proven working elsewhere in this
+  project (Studio's own `avatarGifExport.tsx`) — not a new, unverified
+  approach, the same one this codebase already relies on. Two export
+  buttons: "Export GIF" in the Animations panel (exports the active
+  cycle), "Export current state as GIF" in Settings.
+- Built without mounting an offscreen React tree (which the reference
+  needs, since its frame data feeds a much larger component) — the blob's
+  SVG is just a body path and two eye paths, so `gifExport.ts` builds that
+  markup directly from a sampled frame and rasterizes it, which is simpler
+  and avoids a class of React-mount-timing bugs entirely.
+
+### Not ported
+
+- MP4/video export specifically: the reference project's video encoder
+  uses an external library (`mediabunny`) this project doesn't depend on
+  and that can't be added without network access in the environment this
+  was built in. GIF export doesn't have that constraint (`gifenc` was
+  already a dependency) and is what's built. This is a real, structural
+  reason, not a scope choice.

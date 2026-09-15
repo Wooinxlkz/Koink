@@ -7,7 +7,7 @@ import { HOME_EXPLORE_TEMPLATES, HOME_TEMPLATES } from './avatarHome'
 import type { HomeTemplateId } from './avatarHome'
 import type { AvatarEffectStylePresetId } from './avatarEffectStylePresets'
 import { useAvatarLocale } from './avatarLocale'
-import { KoinkBlob } from '../../components/KoinkBlob'
+import { KoinkBlob } from '../../companion/KoinkBlob'
 
 const HomeAvatarPreview = lazy(() => import('./HomeAvatarPreview'))
 

@@ -9,10 +9,22 @@ nothing in the app's UI, package names, exports, or comments references them.
 
 ---
 
-## 1. Blob-morph engine (`src/engine/blob-core/`)
+## 1. Blob-morph engine and animation/timeline logic (`src/companion/engine/`, `src/companion/*.ts(x)`)
 
-Vendored, unmodified apart from one comment pointing at our own wrapper
-component instead of the upstream one.
+The core morph engine (`engine.ts`, `states.ts`, `skins.ts`, `expressions.ts`,
+etc.) is vendored unmodified apart from one comment pointing at our own
+wrapper component instead of the upstream one. Two more pieces were added
+from the same upstream project in round 4 (cycles/timeline editor): the
+block/cycle data model (`cycles.ts`) was already part of this vendored
+folder and is used as-is; the ruler/zoom layout math
+(`timelineLayout.ts`) is a direct port of the upstream project's own
+timeline-layout module (originally under a different path in their
+source, `src/ui/`, not `src/bot/` — same project, different folder).
+Separately, `KoinkBlob.tsx`'s pointer-follow gaze uses tuned constants
+(max yaw/pitch, baseline pitch) taken from that project's own gaze
+module — the numbers are copied, not the file itself, since the rest of
+that module is tightly coupled to features (an intro sequence, a
+settings-panel turn) that don't exist here.
 
 ```
 MIT License

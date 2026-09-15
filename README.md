@@ -11,9 +11,14 @@ shared across all three):
 - **Companion** — the morphing mascot in its own real workspace (a left
   sidebar rail, like Studio's), not just floating controls: Customize
   (shape × 8, color × 12, expression × 16 — all live previews of the actual
-  engine, see `src/components/BlobCustomizer.tsx`), Animations (the 14
-  states), and Settings (follow-cursor toggle). See
-  `src/components/CompanionWorkspace.tsx`.
+  engine, see `src/companion/BlobCustomizer.tsx`), Animations (a real
+  cycle/timeline editor — build named sequences of states with custom
+  durations, not a flat list of 14 buttons, see
+  `src/companion/AnimationTimeline.tsx`), and Settings (a real, working
+  follow-cursor toggle, using the reference engine's own tuned gaze
+  constants). See `src/companion/CompanionWorkspace.tsx`. Companion has
+  its own dedicated folder (`src/companion/`) — components and engine
+  together, separate from Studio's.
 - **Studio** — the original avatar app's own Home (species/breed/effect-style
   gallery, plus a live Companion tile right in that same grid) plus its
   full geometric avatar editor (coat patterns, face, camera, lighting,
@@ -28,7 +33,7 @@ height above it throws that off).
 
 ## Status
 
-`v0.1.2`. Windows is the only build target for now (see
+`v0.1.5`. Windows is the only build target for now (see
 `src-tauri/tauri.conf.json`'s `bundle.targets`).
 
 ## Getting started
@@ -51,14 +56,19 @@ The installer ends up under `src-tauri/target/release/bundle/`.
 src/
   App.tsx                     three modes, one window, floating pill + theme/lang
   components/
-    KoinkBlob.tsx               React wrapper around the blob-morph engine
-    BlobCustomizer.tsx           shape/color/expression picker
-    CompanionWorkspace.tsx        Companion's sidebar-rail workspace layout
-    HomeLanding.tsx               the app's own front-door tab
+    HomeLanding.tsx              the app's own front-door tab
   styles/
     theme-tokens.scss            light/dark color tokens for the whole app
+  companion/                   Companion's own folder — components + engine
+    KoinkBlob.tsx                 React wrapper around the blob-morph engine
+    BlobCustomizer.tsx             shape/color/expression picker
+    CompanionWorkspace.tsx          sidebar-rail workspace layout
+    AnimationTimeline.tsx           real cycle/timeline editor (the Animations panel)
+    useCyclePlayback.ts             drives playback state from a cycle's blocks
+    cycleStorage.ts                 guarded localStorage for saved cycles
+    gifExport.ts                    GIF export (states or full cycles)
+    engine/                        framework-free morph + cycle/timeline-layout logic
   engine/
-    blob-core/                  framework-free morph engine (pure sample(t) fn)
     avatar-core/                 framework-neutral avatar catalog + definitions
     avatar-react/                 React editor/renderer built on avatar-core
     avatar-app/                   the editor's own UI: Home gallery, Root
@@ -66,9 +76,10 @@ src/
                                   almost as-is
 ```
 
-`engine/` holds code adapted from two open-source projects (see
-`THIRD_PARTY_NOTICES.md`) — the *engines* are third-party-derived, everything
-around them (the app shell, branding, packaging) is Koink's own.
+`companion/engine/` and `engine/` hold code adapted from two open-source
+projects between them (see `THIRD_PARTY_NOTICES.md`) — the *engines* are
+third-party-derived, everything around them (the app shell, workspace
+layout, branding, packaging) is Koink's own.
 
 ## Known gaps in the vendored editor
 
@@ -81,11 +92,17 @@ around them (the app shell, branding, packaging) is Koink's own.
 - The bottom-right rainbow ring in Studio isn't ours — it's the original
   app's own camera-orientation gizmo (`AvatarOrientationControl.tsx`); drag
   it to rotate the avatar's view.
-- The reference engine's animation timeline editor, GIF/video export, and
-  saved-preset gallery aren't ported — Companion's workspace covers shape/color/
-  expression (Customize), the 14 built-in states (Animations), and a
-  follow-cursor toggle (Settings), matching the reference engine's own
-  three-panel sidebar structure, but not those three larger features.
+- The animation/cycle timeline editor *is* ported (round 4) — real cycles,
+  real blocks, real storage — with three specific interaction
+  simplifications: reordering and duration use buttons instead of free
+  dragging, and renaming a cycle uses a plain prompt instead of a custom
+  dialog. GIF export *is* also ported (round 5) — export a state's idle
+  loop or a full custom cycle, same `gifenc` pattern already used
+  elsewhere in this project. **MP4/video export is not ported** — the
+  reference's video encoder depends on an external library
+  (`mediabunny`) this project doesn't have and can't add without network
+  access in the build environment. That's a structural constraint, not a
+  scope choice.
 
 ## Release process
 

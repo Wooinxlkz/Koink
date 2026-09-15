@@ -1,4 +1,4 @@
-import { KoinkBlob } from './KoinkBlob'
+import { KoinkBlob } from '../companion/KoinkBlob'
 
 export interface HomeLandingProps {
   onOpenCompanion: () => void

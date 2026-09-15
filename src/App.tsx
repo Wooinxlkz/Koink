@@ -1,12 +1,19 @@
-import { useState } from 'react'
-import { CompanionWorkspace } from './components/CompanionWorkspace'
+import { useState, lazy, Suspense } from 'react'
+import { CompanionWorkspace } from './companion/CompanionWorkspace'
 import { HomeLanding } from './components/HomeLanding'
-import type { StateId } from './engine/blob-core/states'
-import { DEFAULT_SHAPE, DEFAULT_COLOR, type ShapeId, type ColorId } from './engine/blob-core/skins'
-import { DEFAULT_EXPRESSION, type ExpressionId } from './engine/blob-core/expressions'
-import Root from './engine/avatar-app/Root'
+import type { StateId } from './companion/engine/states'
+import { DEFAULT_SHAPE, DEFAULT_COLOR, type ShapeId, type ColorId } from './companion/engine/skins'
+import { DEFAULT_EXPRESSION, type ExpressionId } from './companion/engine/expressions'
 import { AvatarLocaleProvider } from './engine/avatar-app/avatarLocale'
 import { HomeHeaderActions } from './engine/avatar-app/HomeHeaderActions'
+
+// Studio is the vendored avatar editor — tens of thousands of lines across
+// dozens of components. Loading it eagerly meant every launch paid for
+// parsing all of that before the window even painted, regardless of which
+// tab you actually wanted. Code-split it into its own chunk so Home and
+// Companion (the default and most-visited tabs) start fast, and Studio's
+// weight only loads the first time you actually open it.
+const Root = lazy(() => import('./engine/avatar-app/Root'))
 
 type Mode = 'home' | 'companion' | 'studio'
 
@@ -38,6 +45,15 @@ function HomeGlyph({ active }: { active: boolean }) {
       <path d="M3 10.5 10 4l7 6.5" />
       <path d="M5 9v7h10V9" fill={active ? '#fcc802' : 'none'} />
     </svg>
+  )
+}
+
+/** Shown briefly the first time Studio's (large, code-split) bundle loads. */
+function StudioLoading() {
+  return (
+    <div className="flex h-full w-full items-center justify-center bg-koink-paper dark:bg-koink-ink-soft">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-koink-ink/20 border-t-koink-ink dark:border-koink-paper/20 dark:border-t-koink-paper" />
+    </div>
   )
 }
 
@@ -92,7 +108,9 @@ export function App() {
 
         {mode === 'studio' && (
           <div className="h-full w-full">
-            <Root onOpenCompanion={() => setMode('companion')} />
+            <Suspense fallback={<StudioLoading />}>
+              <Root onOpenCompanion={() => setMode('companion')} />
+            </Suspense>
           </div>
         )}
 
