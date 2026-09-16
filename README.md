@@ -33,7 +33,7 @@ height above it throws that off).
 
 ## Status
 
-`v0.1.5`. Windows is the only build target for now (see
+`v0.1.6`. Windows is the only build target for now (see
 `src-tauri/tauri.conf.json`'s `bundle.targets`).
 
 ## Getting started

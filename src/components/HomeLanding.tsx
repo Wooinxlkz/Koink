@@ -12,7 +12,7 @@ export interface HomeLandingProps {
  */
 export function HomeLanding({ onOpenCompanion, onOpenStudio }: HomeLandingProps) {
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-10 bg-koink-yellow px-6 dark:bg-koink-ink">
+    <div className="flex h-full w-full flex-col items-center justify-center gap-10 bg-white px-6 dark:bg-koink-ink">
       <div className="flex flex-col items-center gap-2 text-center">
         <img src="/favicon.png" alt="" width={56} height={56} />
         <h1 className="font-display text-3xl text-koink-ink dark:text-koink-paper">Koink</h1>

@@ -36,8 +36,9 @@ export function LanguageSwitcher() {
         onClick={() => setOpen(value => !value)}
       >
         <svg viewBox='0 0 20 20' aria-hidden='true'>
-          <circle cx='10' cy='10' r='7.4' />
-          <path d='M2.8 10h14.4M10 2.6c2 2.1 3 4.6 3 7.4s-1 5.3-3 7.4c-2-2.1-3-4.6-3-7.4s1-5.3 3-7.4Z' />
+          <circle cx='10' cy='10' r='7.6' />
+          <ellipse cx='10' cy='10' rx='3.4' ry='7.6' />
+          <path d='M2.6 10h14.8M3.6 6.2h12.8M3.6 13.8h12.8' />
         </svg>
       </button>
       {open

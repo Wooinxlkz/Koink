@@ -30,13 +30,16 @@ export const HomeHeaderActions = () => {
         {dark
           ? (
             <svg viewBox='0 0 20 20' aria-hidden='true'>
-              <circle cx='10' cy='10' r='3.2' />
-              <path d='M10 1.8v2M10 16.2v2M1.8 10h2M16.2 10h2M4.2 4.2l1.4 1.4M14.4 14.4l1.4 1.4M15.8 4.2l-1.4 1.4M5.6 14.4l-1.4 1.4' />
+              <circle cx='10' cy='10' r='3.6' />
+              <path
+                strokeLinecap='round'
+                d='M10 1.6v2.1M10 16.3v2.1M18.4 10h-2.1M3.7 10H1.6M15.7 4.3l-1.5 1.5M5.8 14.2l-1.5 1.5M15.7 15.7l-1.5-1.5M5.8 5.8 4.3 4.3'
+              />
             </svg>
           )
           : (
             <svg viewBox='0 0 20 20' aria-hidden='true'>
-              <path d='M16.9 12.6A7 7 0 0 1 7.4 3.1a7 7 0 1 0 9.5 9.5Z' />
+              <path strokeLinecap='round' strokeLinejoin='round' d='M17.3 12.9A7.4 7.4 0 0 1 7.1 2.7a7.4 7.4 0 1 0 10.2 10.2Z' />
             </svg>
           )}
       </button>

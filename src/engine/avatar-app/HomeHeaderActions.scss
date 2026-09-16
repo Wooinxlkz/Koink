@@ -7,11 +7,11 @@
   .avatar-app__language-toggle,
   .avatar-app__theme-toggle {
     display: inline-grid;
-    width: 42px;
-    height: 42px;
+    width: 36px;
+    height: 36px;
     place-items: center;
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: 9999px;
     background: color-mix(in srgb, var(--bg-color) 90%, transparent);
     color: var(--sub-text-color);
     backdrop-filter: blur(12px);

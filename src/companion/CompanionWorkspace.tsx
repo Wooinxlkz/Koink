@@ -97,7 +97,7 @@ export function CompanionWorkspace({
   }
 
   return (
-    <div className="flex h-full w-full bg-koink-yellow dark:bg-koink-ink">
+    <div className="flex h-full w-full bg-white dark:bg-koink-ink">
       {/* Left rail — fixed, out of flow, matching the mode-switcher's own
           treatment so it never competes for layout space either. */}
       <nav className="fixed left-4 top-1/2 z-40 flex -translate-y-1/2 flex-col gap-1 rounded-2xl border border-koink-ink/10 bg-koink-paper/85 p-1.5 shadow-koink backdrop-blur dark:border-koink-paper/10 dark:bg-koink-ink-soft/85">
@@ -120,7 +120,7 @@ export function CompanionWorkspace({
       </nav>
 
       {/* Main scene: the live preview, always visible regardless of panel. */}
-      <div className="flex h-full flex-1 flex-col items-center justify-center gap-6 overflow-y-auto py-16 pl-20 pr-6">
+      <div className="flex h-full flex-1 flex-col items-center gap-6 overflow-y-auto pb-10 pl-20 pr-6 pt-20">
         <div className="animate-float-y">
           <KoinkBlob
             state={state}

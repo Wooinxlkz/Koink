@@ -15,6 +15,14 @@ const GAZE_PITCH_BASELINE = 10
 
 const clamp11 = (n: number) => Math.max(-1, Math.min(1, n))
 
+/** 0 (black) .. 1 (white), standard sRGB relative luminance from a hex color. */
+function relativeLuminance(hex: string): number {
+  const match = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex)
+  if (!match) return 0
+  const [r, g, b] = [match[1], match[2], match[3]].map(h => parseInt(h, 16) / 255)
+  return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!
+}
+
 export interface KoinkBlobProps {
   /** which of the 14 states to play, e.g. 'idle' | 'thinking' | 'alert' | 'burst' ... */
   state?: StateId
@@ -150,6 +158,10 @@ export function KoinkBlob({
   }, [followPointer, animate])
 
   const ink = COLOR_BY_ID.get(color)?.hex ?? '#0a0a0a'
+  // 'creme' and similarly light body colors leave white eyes almost
+  // invisible — pick a dark eye color for light bodies instead of always
+  // using white, based on the body's own relative luminance.
+  const eyeFill = relativeLuminance(ink) > 0.6 ? '#141014' : '#ffffff'
   const viewSize = size * 2
 
   return (
@@ -167,7 +179,7 @@ export function KoinkBlob({
         >
           <path d={frame.bodyPath} fill={ink} opacity={frame.bodyAlpha} />
           {frame.eyes.map((eye, i) => (
-            <path key={i} d={eye.d} transform={eye.matrix} fill="#ffffff" opacity={eye.alpha} />
+            <path key={i} d={eye.d} transform={eye.matrix} fill={eyeFill} opacity={eye.alpha} />
           ))}
         </svg>
       )}

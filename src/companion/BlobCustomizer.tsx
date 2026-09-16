@@ -131,7 +131,7 @@ export function BlobCustomizer({
           render={(id, active) => (
             <span
               className={`block h-7 w-7 rounded-full ${
-                active ? 'ring-2 ring-koink-ink ring-offset-2 ring-offset-koink-yellow dark:ring-koink-paper dark:ring-offset-koink-ink' : ''
+                active ? 'ring-2 ring-koink-ink ring-offset-2 ring-offset-white dark:ring-koink-paper dark:ring-offset-koink-ink' : ''
               }`}
               style={{ background: COLORS.find(c => c.id === id)?.hex }}
             />
