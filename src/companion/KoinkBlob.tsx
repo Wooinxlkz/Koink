@@ -16,7 +16,7 @@ const GAZE_PITCH_BASELINE = 10
 const clamp11 = (n: number) => Math.max(-1, Math.min(1, n))
 
 /** 0 (black) .. 1 (white), standard sRGB relative luminance from a hex color. */
-function relativeLuminance(hex: string): number {
+export function relativeLuminance(hex: string): number {
   const match = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex)
   if (!match) return 0
   const [r, g, b] = [match[1], match[2], match[3]].map(h => parseInt(h, 16) / 255)
@@ -30,6 +30,13 @@ export interface KoinkBlobProps {
   shape?: ShapeId
   /** ink color preset (defaults to 'encre') */
   color?: ColorId
+  /**
+   * eye color: any of the 12 body colors, or 'auto' (default) — auto picks
+   * a dark or light eye color based on the body color's own relative
+   * luminance, so eyes stay visible on light bodies like 'creme' instead
+   * of always being white.
+   */
+  eyeColor?: ColorId | 'auto'
   /** rest-look expression (defaults to 'neutre'/neutral) */
   expression?: ExpressionId
   /** viewBox radius in px; the component itself is responsive via CSS */
@@ -56,6 +63,7 @@ export function KoinkBlob({
   state = 'idle',
   shape = DEFAULT_SHAPE as ShapeId,
   color = DEFAULT_COLOR as ColorId,
+  eyeColor = 'auto',
   expression,
   size = 120,
   followPointer = true,
@@ -159,9 +167,13 @@ export function KoinkBlob({
 
   const ink = COLOR_BY_ID.get(color)?.hex ?? '#0a0a0a'
   // 'creme' and similarly light body colors leave white eyes almost
-  // invisible — pick a dark eye color for light bodies instead of always
-  // using white, based on the body's own relative luminance.
-  const eyeFill = relativeLuminance(ink) > 0.6 ? '#141014' : '#ffffff'
+  // invisible — 'auto' (the default) picks a dark or light eye color from
+  // the body color's own relative luminance instead of always using
+  // white; a specific eyeColor overrides that entirely.
+  const eyeFill =
+    eyeColor === 'auto'
+      ? relativeLuminance(ink) > 0.6 ? '#141014' : '#ffffff'
+      : COLOR_BY_ID.get(eyeColor)?.hex ?? '#ffffff'
   const viewSize = size * 2
 
   return (

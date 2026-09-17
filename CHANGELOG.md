@@ -505,3 +505,78 @@ should look like, that's buildable — just needs to be the right target.
   theme, overwriting whatever you'd manually picked. That effect is now
   disabled — Koink has exactly one source of truth for `.dark` (the global
   toggle in `App.tsx`), not two competing ones.
+
+## [0.1.7]
+
+### Changed — answered the Home/Studio question from last round
+
+Last round I said I wasn't sure what "Home page should be same as Studio"
+meant and didn't want to guess. Asked again this round without a
+clarifying example, so committing to the interpretation that best fits
+what was actually said ("studio should directly inside that edit"):
+
+- **Home now shows Studio's real gallery** (species/breed grid + the live
+  Companion tile in it) instead of Koink's own separate two-card page —
+  removed `src/components/HomeLanding.tsx` entirely, no longer needed.
+  Home and Studio's *own* internal home page are now the same screen,
+  instead of two different "pick where to start" screens stacked on top
+  of each other.
+- **Studio now jumps straight into the editor** — a random avatar loads
+  immediately (same as the gallery's own "Surprise me"), no gallery
+  screen first. `Root.tsx` gained a `startInEditor` prop for this.
+- Fixed a real bug this surfaced: Home and Studio are two separate mounts
+  of the same `Root` component, but both read the *same* browser URL —
+  so without care, switching Home → Studio → Home could land back on
+  whatever Studio was last editing instead of Home's gallery. Added the
+  matching `startAtHome` prop, which resets that shared URL state on
+  mount so Home always means Home.
+- Performance note, stated plainly: Home used to be lightweight (Koink's
+  own simple page); now it needs Studio's full code-split bundle too,
+  same as Studio does. Both still load lazily rather than eagerly, and
+  it's one shared chunk either way (no double-loading), but Home is no
+  longer the "instant, no Studio weight" tab Companion still is.
+
+### Added — eye color
+
+Eyes were auto-only (dark or light based on the body color's brightness,
+from last round's contrast fix). Now genuinely customizable: a new "Eye
+color" row in Customize, the same 12-color palette plus an "Auto" option
+(the previous default behavior, still the default). Threaded through
+everywhere the mascot renders with a chosen palette — the main preview,
+every customizer/timeline swatch, and GIF export — not just the one
+screen where it's picked.
+
+## [0.1.8]
+
+### Added — closed the two named interaction gaps from the timeline editor
+
+Both things explicitly flagged as simplified in rounds 0.1.4–0.1.7 are now
+built for real, in `src/companion/AnimationTimeline.tsx`:
+
+- **Drag-and-drop reordering** — blocks are draggable; drag one onto
+  another to reorder (native HTML5 drag-and-drop, with a dashed-border
+  hover indicator and a dimmed source block while dragging). The
+  move-earlier/move-later buttons are kept alongside, not removed — a
+  keyboard/non-drag way to do the same thing is a real accessibility
+  need, not redundant.
+- **Duration by dragging** — each block has a resize handle on its right
+  edge; drag it to change duration in real time, using the same
+  `clampDuration` bounds as the +/− buttons (which also stay, for the
+  same reason as above). One specific risk worth naming: the resize
+  handle sits inside a `draggable` block, and starting a drag gesture
+  from inside a draggable ancestor can trigger the browser's native
+  drag instead of a child's own pointer handling. Set `draggable={false}`
+  explicitly on the handle to prevent that — a real, known interaction
+  conflict, not a hypothetical one.
+- **A real rename dialog** — a small modal (text input, Cancel/Save,
+  Enter to confirm, Escape to cancel) instead of the browser's own
+  `window.prompt`.
+
+### Still the one thing that can't be done here
+
+MP4/video export. Said before, still true, worth repeating precisely:
+the reference project's video encoder depends on an external library
+(`mediabunny`) not in this project, and there's no network access in this
+build environment to add it. Everything else named as a gap across this
+project's rounds has now been either built or explained as a hard
+constraint, not a soft one.

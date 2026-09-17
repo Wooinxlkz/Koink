@@ -29,11 +29,32 @@ const replaceLocation = (query: string, hash: string) => {
 interface RootProps {
   /** Passed straight through to HomePage's Companion tile, if provided. */
   readonly onOpenCompanion?: () => void
+  /**
+   * Skip HomePage entirely and open straight into the editor (with a
+   * random avatar, since the editor needs something to edit) — used so
+   * Koink's own "Studio" tab goes directly to editing, while "Home" shows
+   * this same Root's normal HomePage-first behavior.
+   */
+  readonly startInEditor?: boolean
+  /**
+   * The counterpart to startInEditor, for the "Home" tab's own Root
+   * instance: force the gallery, even if the *other* Root instance (the
+   * "Studio" tab's) left the browser's shared URL pointed at an editor
+   * link. Both tabs mount independent Root instances but read the same
+   * global `window.location`, so without this, switching Home -> Studio
+   * -> Home could land back on whatever Studio was last editing instead
+   * of the gallery Home is supposed to always show.
+   */
+  readonly startAtHome?: boolean
 }
 
-const Root = ({ onOpenCompanion }: RootProps) => {
+const Root = ({ onOpenCompanion, startInEditor = false, startAtHome = false }: RootProps) => {
   const { t } = useAvatarLocale()
-  const [editorOpen, setEditorOpen] = useState(isEditorLocation)
+  const [editorOpen, setEditorOpen] = useState(() => {
+    if (startInEditor) return true
+    if (startAtHome) return false
+    return isEditorLocation()
+  })
   const randomEditorOpeningRef = useRef(false)
 
   useEffect(() => {
@@ -75,6 +96,15 @@ const Root = ({ onOpenCompanion }: RootProps) => {
     }
   }, [editorOpen])
 
+  useEffect(() => {
+    // Counterpart to the startInEditor effect further down: if Home's Root
+    // mounts while the shared URL still points at an editor link (left
+    // over from the Studio tab's own Root instance), clear it — Home
+    // should always read as Home, in the URL too, not just on screen.
+    if (startAtHome && isEditorLocation()) replaceLocation('', '')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const openEditor = useCallback((query: string) => {
     replaceLocation(query, EDITOR_HASH)
     setEditorOpen(true)
@@ -95,6 +125,17 @@ const Root = ({ onOpenCompanion }: RootProps) => {
         randomEditorOpeningRef.current = false
       })
   }, [openEditor])
+
+  useEffect(() => {
+    // startInEditor got us into "editor" state immediately, but if there's
+    // no actual template/seed in the URL yet (a fresh "Studio" tab click,
+    // not a reload of an existing editor link), the editor has nothing to
+    // show — give it a random avatar, the same way "Surprise me" does.
+    if (startInEditor && !isEditorLocation()) openRandomEditor()
+    // Intentionally only on mount: startInEditor is a one-time "how did we
+    // get here" signal, not something that should re-trigger later.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const openHome = useCallback(() => {
     if (window.location.search.length > 1) {

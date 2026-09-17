@@ -51,9 +51,11 @@ const EXPRESSION_LABELS: Record<ExpressionId, string> = {
 export interface BlobCustomizerProps {
   shape: ShapeId
   color: ColorId
+  eyeColor: ColorId | 'auto'
   expression: ExpressionId
   onShapeChange: (shape: ShapeId) => void
   onColorChange: (color: ColorId) => void
+  onEyeColorChange: (color: ColorId | 'auto') => void
   onExpressionChange: (expression: ExpressionId) => void
 }
 
@@ -101,9 +103,11 @@ function SwatchGrid<T extends string>({
 export function BlobCustomizer({
   shape,
   color,
+  eyeColor,
   expression,
   onShapeChange,
   onColorChange,
+  onEyeColorChange,
   onExpressionChange
 }: BlobCustomizerProps) {
   return (
@@ -116,7 +120,7 @@ export function BlobCustomizer({
           onChange={onShapeChange}
           label={id => SHAPE_LABELS[id]}
           render={id => (
-            <KoinkBlob shape={id} color={color} size={16} animate={false} followPointer={false} />
+            <KoinkBlob shape={id} color={color} eyeColor={eyeColor} size={16} animate={false} followPointer={false} />
           )}
         />
       </section>
@@ -140,6 +144,34 @@ export function BlobCustomizer({
       </section>
 
       <section className="flex flex-col items-center gap-2">
+        <h3 className="font-display text-sm text-koink-ink/70 dark:text-koink-paper/70">Eye color</h3>
+        <SwatchGrid
+          items={['auto', ...COLORS.map(c => c.id)] as Array<ColorId | 'auto'>}
+          value={eyeColor}
+          onChange={onEyeColorChange}
+          label={id => (id === 'auto' ? 'Auto (matches body)' : COLOR_LABELS[id])}
+          render={(id, active) =>
+            id === 'auto'
+              ? (
+                <span
+                  className="flex h-7 w-7 items-center justify-center rounded-full border border-koink-ink/20 text-[9px] font-semibold text-koink-ink dark:border-koink-paper/30 dark:text-koink-paper"
+                  style={{ background: 'conic-gradient(from 180deg, #fff 0 50%, #141014 50% 100%)' }}
+                >
+                  <span className="rounded-full bg-koink-paper px-1 py-0.5 leading-none dark:bg-koink-ink">A</span>
+                </span>
+              )
+              : (
+                <span
+                  className={`block h-7 w-7 rounded-full ${
+                    active ? 'ring-2 ring-koink-ink ring-offset-2 ring-offset-white dark:ring-koink-paper dark:ring-offset-koink-ink' : ''
+                  }`}
+                  style={{ background: COLORS.find(c => c.id === id)?.hex }}
+                />
+              )}
+        />
+      </section>
+
+      <section className="flex flex-col items-center gap-2">
         <h3 className="font-display text-sm text-koink-ink/70 dark:text-koink-paper/70">Expression</h3>
         <SwatchGrid
           items={EXPRESSIONS.map(e => e.id)}
@@ -150,6 +182,7 @@ export function BlobCustomizer({
             <KoinkBlob
               shape={shape}
               color={color}
+              eyeColor={eyeColor}
               expression={id}
               size={16}
               animate={false}

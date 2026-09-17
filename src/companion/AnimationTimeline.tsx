@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   MAX_CYCLES,
   STEP,
@@ -53,6 +53,7 @@ function loadInitialActiveId(cycles: Cycle[]): string {
 export interface AnimationTimelineProps {
   shape: ShapeId
   color: ColorId
+  eyeColor: ColorId | 'auto'
   expression: ExpressionId
   onPreviewStateChange: (state: StateId) => void
 }
@@ -64,20 +65,24 @@ export interface AnimationTimelineProps {
  * THIRD_PARTY_NOTICES.md) — not a flat list of the 14 built-in states,
  * which is what stood in for it before.
  *
- * Simplified from the reference on purpose, where noted: block reordering
- * and duration editing use buttons rather than free dragging, and renaming
- * a cycle uses a plain prompt rather than a custom dialog — safer to build
- * correctly without being able to render and check drag interactions
- * visually. The underlying data model (blocks, cycles, storage, validation)
- * is the same vetted logic, not a reimplementation.
+ * Block reordering is drag-and-drop, duration is a drag handle on each
+ * block's right edge, and renaming a cycle uses a real dialog — the
+ * underlying data model (blocks, cycles, storage, validation) is the same
+ * vetted logic throughout, not a reimplementation.
  */
-export function AnimationTimeline({ shape, color, expression, onPreviewStateChange }: AnimationTimelineProps) {
+export function AnimationTimeline({ shape, color, eyeColor, expression, onPreviewStateChange }: AnimationTimelineProps) {
   const [cycles, setCycles] = useState<Cycle[]>(loadInitialCycles)
   const [activeId, setActiveId] = useState<string>(() => loadInitialActiveId(cycles))
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [playing, setPlaying] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [exportProgress, setExportProgress] = useState<number | null>(null)
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+  const [resizingIndex, setResizingIndex] = useState<number | null>(null)
+  const [renameTarget, setRenameTarget] = useState<Cycle | null>(null)
+  const [renameDraft, setRenameDraft] = useState('')
+  const resizeStartRef = useRef<{ x: number; duration: number } | null>(null)
 
   const active = cycles.find(c => c.id === activeId) ?? cycles[0]!
 
@@ -115,11 +120,16 @@ export function AnimationTimeline({ shape, color, expression, onPreviewStateChan
     setSelectedIndex(i => Math.max(0, Math.min(i, active.blocks.length - 2)))
   }
 
-  const reorder = (index: number, direction: -1 | 1) => {
-    const to = index + direction
-    if (to < 0 || to >= active.blocks.length) return
-    updateActiveBlocks(moveBlock(active.blocks, index, to))
+  const reorder = (from: number, to: number) => {
+    if (to < 0 || to >= active.blocks.length || from === to) return
+    updateActiveBlocks(moveBlock(active.blocks, from, to))
     setSelectedIndex(to)
+  }
+
+  const handleDrop = (dropIndex: number) => {
+    if (dragIndex != null) reorder(dragIndex, dropIndex)
+    setDragIndex(null)
+    setDragOverIndex(null)
   }
 
   const changeDuration = (index: number, delta: number) => {
@@ -128,6 +138,36 @@ export function AnimationTimeline({ shape, color, expression, onPreviewStateChan
     const next = active.blocks.slice()
     next[index] = { ...block, duration: clampDuration(block.state, block.duration + delta) }
     updateActiveBlocks(next)
+  }
+
+  const setDuration = (index: number, duration: number) => {
+    const block = active.blocks[index]
+    if (!block) return
+    const next = active.blocks.slice()
+    next[index] = { ...block, duration: clampDuration(block.state, duration) }
+    updateActiveBlocks(next)
+  }
+
+  const beginResize = (index: number, startX: number) => {
+    const block = active.blocks[index]
+    if (!block) return
+    resizeStartRef.current = { x: startX, duration: block.duration }
+    setResizingIndex(index)
+
+    const onMove = (e: PointerEvent) => {
+      const start = resizeStartRef.current
+      if (start == null) return
+      const deltaSeconds = (e.clientX - start.x) / BASE_SCALE
+      setDuration(index, start.duration + deltaSeconds)
+    }
+    const onUp = () => {
+      resizeStartRef.current = null
+      setResizingIndex(null)
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
   }
 
   const createCycle = () => {
@@ -143,9 +183,17 @@ export function AnimationTimeline({ shape, color, expression, onPreviewStateChan
   const renameCycle = (id: string) => {
     const target = cycles.find(c => c.id === id)
     if (!target) return
-    const name = window.prompt('Rename cycle', target.name || cycleDisplayName(target))
-    if (name == null || name.trim() === '') return
-    setCycles(prev => prev.map(c => (c.id === id ? { ...c, name: name.trim() } : c)))
+    setRenameTarget(target)
+    setRenameDraft(target.name || cycleDisplayName(target))
+  }
+
+  const confirmRename = () => {
+    if (renameTarget == null) return
+    const name = renameDraft.trim()
+    if (name !== '') {
+      setCycles(prev => prev.map(c => (c.id === renameTarget.id ? { ...c, name } : c)))
+    }
+    setRenameTarget(null)
   }
 
   const deleteCycle = (id: string) => {
@@ -162,6 +210,7 @@ export function AnimationTimeline({ shape, color, expression, onPreviewStateChan
       const blob = await exportGif({
         shape,
         color,
+        eyeColor,
         expression,
         size: 320,
         fps: 20,
@@ -265,18 +314,38 @@ export function AnimationTimeline({ shape, color, expression, onPreviewStateChan
         {active.blocks.map((block, i) => (
           <div
             key={i}
+            draggable
+            onDragStart={e => {
+              setDragIndex(i)
+              e.dataTransfer.effectAllowed = 'move'
+            }}
+            onDragOver={e => {
+              e.preventDefault()
+              if (dragOverIndex !== i) setDragOverIndex(i)
+            }}
+            onDragLeave={() => setDragOverIndex(current => (current === i ? null : current))}
+            onDrop={e => {
+              e.preventDefault()
+              handleDrop(i)
+            }}
+            onDragEnd={() => {
+              setDragIndex(null)
+              setDragOverIndex(null)
+            }}
             onClick={() => {
               setPlaying(false)
               setSelectedIndex(i)
             }}
             style={{ width: Math.max(56, block.duration * BASE_SCALE) }}
-            className={`flex shrink-0 cursor-pointer flex-col items-center gap-1 rounded-xl border-2 p-2 transition-colors ${
+            className={`relative flex shrink-0 cursor-grab flex-col items-center gap-1 rounded-xl border-2 p-2 pr-3 transition-colors active:cursor-grabbing ${
               i === selectedIndex && !playing
                 ? 'border-koink-ink dark:border-koink-paper'
                 : 'border-transparent bg-koink-ink/5 dark:bg-koink-paper/5'
+            } ${dragIndex === i ? 'opacity-40' : ''} ${
+              dragOverIndex === i && dragIndex !== null && dragIndex !== i ? 'border-dashed border-koink-ink/60 dark:border-koink-paper/60' : ''
             }`}
           >
-            <KoinkBlob state={block.state} shape={shape} color={color} size={16} animate={false} followPointer={false} />
+            <KoinkBlob state={block.state} shape={shape} color={color} eyeColor={eyeColor} size={16} animate={false} followPointer={false} />
             <span className="truncate text-[10px] font-medium text-koink-ink dark:text-koink-paper">
               {STATE_LABELS[block.state] ?? block.state}
             </span>
@@ -288,16 +357,31 @@ export function AnimationTimeline({ shape, color, expression, onPreviewStateChan
               <IconButton label="Longer" onClick={() => changeDuration(i, STEP)}>
                 +
               </IconButton>
-              <IconButton label="Move earlier" onClick={() => reorder(i, -1)} disabled={i === 0}>
+              <IconButton label="Move earlier" onClick={() => reorder(i, i - 1)} disabled={i === 0}>
                 ←
               </IconButton>
-              <IconButton label="Move later" onClick={() => reorder(i, 1)} disabled={i === active.blocks.length - 1}>
+              <IconButton label="Move later" onClick={() => reorder(i, i + 1)} disabled={i === active.blocks.length - 1}>
                 →
               </IconButton>
               <IconButton label="Remove" onClick={() => removeBlock(i)} disabled={active.blocks.length <= 1}>
                 ✕
               </IconButton>
             </div>
+
+            {/* Drag handle: resize this block's duration by dragging its
+                right edge, in addition to the +/− buttons above. */}
+            <div
+              draggable={false}
+              onPointerDown={e => {
+                e.stopPropagation()
+                e.preventDefault()
+                beginResize(i, e.clientX)
+              }}
+              title="Drag to change duration"
+              className={`absolute -right-0.5 top-0 h-full w-2 cursor-ew-resize rounded-r-xl ${
+                resizingIndex === i ? 'bg-koink-ink/30 dark:bg-koink-paper/30' : 'hover:bg-koink-ink/10 dark:hover:bg-koink-paper/10'
+              }`}
+            />
           </div>
         ))}
       </div>
@@ -316,6 +400,46 @@ export function AnimationTimeline({ shape, color, expression, onPreviewStateChan
           </button>
         ))}
       </div>
+
+      {renameTarget && (
+        <div
+          className="fixed inset-0 z-[9999999] flex items-center justify-center bg-black/30"
+          onClick={() => setRenameTarget(null)}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            className="flex w-72 flex-col gap-3 rounded-2xl bg-koink-paper p-4 shadow-koink dark:bg-koink-ink-soft"
+          >
+            <h3 className="font-display text-sm text-koink-ink dark:text-koink-paper">Rename cycle</h3>
+            <input
+              autoFocus
+              value={renameDraft}
+              onChange={e => setRenameDraft(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') confirmRename()
+                if (e.key === 'Escape') setRenameTarget(null)
+              }}
+              maxLength={60}
+              className="rounded-lg border border-koink-ink/15 bg-white px-3 py-1.5 text-sm text-koink-ink outline-none focus:border-koink-ink/40 dark:border-koink-paper/15 dark:bg-koink-ink dark:text-koink-paper dark:focus:border-koink-paper/40"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setRenameTarget(null)}
+                className="rounded-full px-3 py-1 text-sm text-koink-ink/60 hover:bg-koink-ink/5 dark:text-koink-paper/60 dark:hover:bg-koink-paper/10"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmRename}
+                disabled={renameDraft.trim() === ''}
+                className="rounded-full bg-koink-ink px-4 py-1 text-sm text-koink-paper disabled:opacity-40 dark:bg-koink-paper dark:text-koink-ink"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

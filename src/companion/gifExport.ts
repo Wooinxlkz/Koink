@@ -5,6 +5,7 @@ import { EXPRESSION_BY_ID, type ExpressionId } from './engine/expressions'
 import type { StateId } from './engine/states'
 import type { Block } from './engine/cycles'
 import { blockAt } from './engine/cycles'
+import { relativeLuminance } from './KoinkBlob'
 
 const GIF_PALETTE_SIZE = 256
 const GIF_PALETTE_FORMAT = 'rgba4444' as const
@@ -23,10 +24,10 @@ const FIXED_STATE_SECONDS = 3
  * (`viewSize = size * 2`, viewBox spans `-size..size`). Getting this
  * relationship wrong makes every exported frame render at half scale.
  */
-function frameToSvgMarkup(frame: BotFrame, ink: string, pixelSize: number): string {
+function frameToSvgMarkup(frame: BotFrame, ink: string, eyeFill: string, pixelSize: number): string {
   const half = pixelSize / 2
   const eyes = frame.eyes
-    .map(eye => `<path d="${eye.d}" transform="${eye.matrix}" fill="#ffffff" opacity="${eye.alpha}" />`)
+    .map(eye => `<path d="${eye.d}" transform="${eye.matrix}" fill="${eyeFill}" opacity="${eye.alpha}" />`)
     .join('')
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-half} ${-half} ${pixelSize} ${pixelSize}" width="${pixelSize}" height="${pixelSize}">` +
@@ -59,6 +60,7 @@ async function svgMarkupToCanvas(markup: string, size: number, background: strin
 export interface GifExportOptions {
   shape: ShapeId
   color: ColorId
+  eyeColor: ColorId | 'auto'
   expression: ExpressionId
   size: number
   fps: number
@@ -80,6 +82,10 @@ export async function exportGif(options: GifExportOptions): Promise<Blob> {
   const shapeRadii = SHAPE_BY_ID.get(options.shape)?.radii ?? null
   const expr = EXPRESSION_BY_ID.get(options.expression) ?? null
   const ink = COLOR_BY_ID.get(options.color)?.hex ?? '#0a0a0a'
+  const eyeFill =
+    options.eyeColor === 'auto'
+      ? relativeLuminance(ink) > 0.6 ? '#141014' : '#ffffff'
+      : COLOR_BY_ID.get(options.eyeColor)?.hex ?? '#ffffff'
   const background = options.background === 'white' ? '#ffffff' : null
 
   const initialState = options.source.kind === 'state' ? options.source.state : options.source.blocks[0]?.state ?? 'idle'
@@ -108,7 +114,7 @@ export async function exportGif(options: GifExportOptions): Promise<Blob> {
     }
 
     const frame = engine.sample(t)
-    const markup = frameToSvgMarkup(frame, ink, options.size)
+    const markup = frameToSvgMarkup(frame, ink, eyeFill, options.size)
     const canvas = await svgMarkupToCanvas(markup, options.size, background)
     const ctx = canvas.getContext('2d')
     if (!ctx) throw new Error('Unable to read GIF frame')

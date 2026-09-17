@@ -49,6 +49,8 @@ export interface CompanionWorkspaceProps {
   onShapeChange: (shape: ShapeId) => void
   color: ColorId
   onColorChange: (color: ColorId) => void
+  eyeColor: ColorId | 'auto'
+  onEyeColorChange: (color: ColorId | 'auto') => void
   expression: ExpressionId
   onExpressionChange: (expression: ExpressionId) => void
   followPointer: boolean
@@ -68,6 +70,8 @@ export function CompanionWorkspace({
   onShapeChange,
   color,
   onColorChange,
+  eyeColor,
+  onEyeColorChange,
   expression,
   onExpressionChange,
   followPointer,
@@ -83,6 +87,7 @@ export function CompanionWorkspace({
       const blob = await exportGif({
         shape,
         color,
+        eyeColor,
         expression,
         size: 320,
         fps: 20,
@@ -126,6 +131,7 @@ export function CompanionWorkspace({
             state={state}
             shape={shape}
             color={color}
+            eyeColor={eyeColor}
             expression={expression}
             size={130}
             followPointer={followPointer}
@@ -137,15 +143,23 @@ export function CompanionWorkspace({
             <BlobCustomizer
               shape={shape}
               color={color}
+              eyeColor={eyeColor}
               expression={expression}
               onShapeChange={onShapeChange}
               onColorChange={onColorChange}
+              onEyeColorChange={onEyeColorChange}
               onExpressionChange={onExpressionChange}
             />
           )}
 
           {panel === 'animations' && (
-            <AnimationTimeline shape={shape} color={color} expression={expression} onPreviewStateChange={onStateChange} />
+            <AnimationTimeline
+              shape={shape}
+              color={color}
+              eyeColor={eyeColor}
+              expression={expression}
+              onPreviewStateChange={onStateChange}
+            />
           )}
 
           {panel === 'settings' && (

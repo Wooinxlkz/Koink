@@ -1,6 +1,5 @@
 import { useState, lazy, Suspense } from 'react'
 import { CompanionWorkspace } from './companion/CompanionWorkspace'
-import { HomeLanding } from './components/HomeLanding'
 import type { StateId } from './companion/engine/states'
 import { DEFAULT_SHAPE, DEFAULT_COLOR, type ShapeId, type ColorId } from './companion/engine/skins'
 import { DEFAULT_EXPRESSION, type ExpressionId } from './companion/engine/expressions'
@@ -8,11 +7,12 @@ import { AvatarLocaleProvider } from './engine/avatar-app/avatarLocale'
 import { HomeHeaderActions } from './engine/avatar-app/HomeHeaderActions'
 
 // Studio is the vendored avatar editor — tens of thousands of lines across
-// dozens of components. Loading it eagerly meant every launch paid for
-// parsing all of that before the window even painted, regardless of which
-// tab you actually wanted. Code-split it into its own chunk so Home and
-// Companion (the default and most-visited tabs) start fast, and Studio's
-// weight only loads the first time you actually open it.
+// dozens of components. Code-split so Companion (which never needs it)
+// still starts instantly. Home and Studio both use it now (Home shows its
+// real species/breed gallery, Studio jumps straight into editing — see the
+// startInEditor prop below) so the two don't show two different, redundant
+// "pick where to start" screens; both pay Studio's load cost, but only
+// once, since it's the same lazy chunk either way.
 const Root = lazy(() => import('./engine/avatar-app/Root'))
 
 type Mode = 'home' | 'companion' | 'studio'
@@ -64,23 +64,26 @@ const TABS: Array<{ id: Mode; label: string; glyph: (active: boolean) => JSX.Ele
 ]
 
 /**
- * One window, three modes — Home (pick where to go), Companion (the
- * mascot's real workspace: shape/color/expression + animations, see
- * CompanionWorkspace), and Studio (the vendored avatar editor, its own Home
- * gallery still reachable once inside). The switcher below is deliberately
- * `fixed` (taken out of document flow) rather than a normal nav row:
- * Studio's own CSS sizes several of its elements against the real
- * `100vh`/`100vw`, so anything of ours that consumes *flow* height above it
- * throws that off by exactly that many pixels — that's what caused the
- * broken/overlapping look earlier on. A `fixed` overlay floats on top
- * without shrinking anyone's available height, so Root still sees the full
- * window either way.
+ * One window, three modes — Home (Studio's own species/breed gallery, plus
+ * a live Companion tile in that same grid — Koink's actual front door),
+ * Companion (the mascot's real workspace: shape/color/expression +
+ * animations, see CompanionWorkspace), and Studio (jumps straight into the
+ * editor with a random avatar, via Root's `startInEditor` — no second
+ * "pick a template" screen redundant with Home's). The switcher below is
+ * deliberately `fixed` (taken out of document flow) rather than a normal
+ * nav row: the vendored editor's own CSS sizes several of its elements
+ * against the real `100vh`/`100vw`, so anything of ours that consumes
+ * *flow* height above it throws that off by exactly that many pixels —
+ * that's what caused the broken/overlapping look earlier on. A `fixed`
+ * overlay floats on top without shrinking anyone's available height, so
+ * Root still sees the full window either way.
  */
 export function App() {
   const [mode, setMode] = useState<Mode>('home')
   const [state, setState] = useState<StateId>('idle')
   const [shape, setShape] = useState<ShapeId>(DEFAULT_SHAPE as ShapeId)
   const [color, setColor] = useState<ColorId>(DEFAULT_COLOR as ColorId)
+  const [eyeColor, setEyeColor] = useState<ColorId | 'auto'>('auto')
   const [expression, setExpression] = useState<ExpressionId>(DEFAULT_EXPRESSION as ExpressionId)
   const [followPointer, setFollowPointer] = useState(true)
 
@@ -88,7 +91,11 @@ export function App() {
     <AvatarLocaleProvider>
       <div className="relative h-full w-full">
         {mode === 'home' && (
-          <HomeLanding onOpenCompanion={() => setMode('companion')} onOpenStudio={() => setMode('studio')} />
+          <div className="h-full w-full">
+            <Suspense fallback={<StudioLoading />}>
+              <Root onOpenCompanion={() => setMode('companion')} startAtHome />
+            </Suspense>
+          </div>
         )}
 
         {mode === 'companion' && (
@@ -99,6 +106,8 @@ export function App() {
             onShapeChange={setShape}
             color={color}
             onColorChange={setColor}
+            eyeColor={eyeColor}
+            onEyeColorChange={setEyeColor}
             expression={expression}
             onExpressionChange={setExpression}
             followPointer={followPointer}
@@ -109,7 +118,7 @@ export function App() {
         {mode === 'studio' && (
           <div className="h-full w-full">
             <Suspense fallback={<StudioLoading />}>
-              <Root onOpenCompanion={() => setMode('companion')} />
+              <Root onOpenCompanion={() => setMode('companion')} startInEditor />
             </Suspense>
           </div>
         )}

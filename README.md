@@ -7,23 +7,27 @@ One window, three modes, switched with a small floating pill at the
 top-center (theme toggle and language switcher live right next to it,
 shared across all three):
 
-- **Home** — the app's front door: two cards, pick Companion or Studio.
+- **Home** — the app's front door: Studio's real species/breed gallery
+  (the same screen Studio itself opens into, see below), including a live
+  Companion tile in that grid. Not a separate simplified page anymore.
 - **Companion** — the morphing mascot in its own real workspace (a left
   sidebar rail, like Studio's), not just floating controls: Customize
-  (shape × 8, color × 12, expression × 16 — all live previews of the actual
-  engine, see `src/companion/BlobCustomizer.tsx`), Animations (a real
-  cycle/timeline editor — build named sequences of states with custom
-  durations, not a flat list of 14 buttons, see
-  `src/companion/AnimationTimeline.tsx`), and Settings (a real, working
-  follow-cursor toggle, using the reference engine's own tuned gaze
-  constants). See `src/companion/CompanionWorkspace.tsx`. Companion has
-  its own dedicated folder (`src/companion/`) — components and engine
-  together, separate from Studio's.
-- **Studio** — the original avatar app's own Home (species/breed/effect-style
-  gallery, plus a live Companion tile right in that same grid) plus its
-  full geometric avatar editor (coat patterns, face, camera, lighting,
-  animation timeline, SVG/PNG/GIF export), rendered full-bleed, hash-routed
-  internally exactly like the source project.
+  (shape × 8, color × 12, eye color × 12 + auto, expression × 16 — all
+  live previews of the actual engine, see
+  `src/companion/BlobCustomizer.tsx`), Animations (a real cycle/timeline
+  editor — build named sequences of states with custom durations, not a
+  flat list of 14 buttons, see `src/companion/AnimationTimeline.tsx`), and
+  Settings (a real, working follow-cursor toggle, using the reference
+  engine's own tuned gaze constants). See
+  `src/companion/CompanionWorkspace.tsx`. Companion has its own dedicated
+  folder (`src/companion/`) — components and engine together, separate
+  from Studio's.
+- **Studio** — jumps straight into the full geometric avatar editor (coat
+  patterns, face, camera, lighting, animation timeline, SVG/PNG/GIF
+  export) with a random avatar — no gallery screen first, since Home
+  already is that gallery now. `Root.tsx`'s `startInEditor` prop is what
+  makes this tab behave differently from Home despite both rendering the
+  same underlying component.
 
 The mode switcher is `position: fixed` rather than a normal nav bar — see
 the comment at the top of `src/App.tsx` for why that specific detail
@@ -33,7 +37,7 @@ height above it throws that off).
 
 ## Status
 
-`v0.1.6`. Windows is the only build target for now (see
+`v0.1.8`. Windows is the only build target for now (see
 `src-tauri/tauri.conf.json`'s `bundle.targets`).
 
 ## Getting started
@@ -55,8 +59,6 @@ The installer ends up under `src-tauri/target/release/bundle/`.
 ```
 src/
   App.tsx                     three modes, one window, floating pill + theme/lang
-  components/
-    HomeLanding.tsx              the app's own front-door tab
   styles/
     theme-tokens.scss            light/dark color tokens for the whole app
   companion/                   Companion's own folder — components + engine
@@ -93,16 +95,15 @@ layout, branding, packaging) is Koink's own.
   app's own camera-orientation gizmo (`AvatarOrientationControl.tsx`); drag
   it to rotate the avatar's view.
 - The animation/cycle timeline editor *is* ported (round 4) — real cycles,
-  real blocks, real storage — with three specific interaction
-  simplifications: reordering and duration use buttons instead of free
-  dragging, and renaming a cycle uses a plain prompt instead of a custom
-  dialog. GIF export *is* also ported (round 5) — export a state's idle
-  loop or a full custom cycle, same `gifenc` pattern already used
-  elsewhere in this project. **MP4/video export is not ported** — the
-  reference's video encoder depends on an external library
-  (`mediabunny`) this project doesn't have and can't add without network
-  access in the build environment. That's a structural constraint, not a
-  scope choice.
+  real blocks, real storage, drag-and-drop reordering, drag-to-resize
+  duration, and a real rename dialog (round 8; the first pass used buttons
+  and a browser prompt instead — closed out once named explicitly). GIF
+  export *is* also ported (round 5) — export a state's idle loop or a full
+  custom cycle, same `gifenc` pattern already used elsewhere in this
+  project. **MP4/video export is not ported** — the reference's video
+  encoder depends on an external library (`mediabunny`) this project
+  doesn't have and can't add without network access in the build
+  environment. That's a structural constraint, not a scope choice.
 
 ## Release process
 
