@@ -580,3 +580,57 @@ the reference project's video encoder depends on an external library
 build environment to add it. Everything else named as a gap across this
 project's rounds has now been either built or explained as a hard
 constraint, not a soft one.
+
+## [0.1.9]
+
+### Checked — theme/text color consistency
+
+Audited every text/border color class in Companion's own code
+(`src/companion/`) for a missing `dark:` variant, the same way past
+contrast bugs were found — none. Companion was already fully
+theme-consistent; no changes needed there. (Studio's vendored CSS has a
+handful of hardcoded accent colors — e.g. a couple of warning-banner
+styles with a light background regardless of theme — but those are the
+original project's own pre-existing design, not something this round
+touched or found evidence of being the actual complaint.)
+
+### Added — custom color picker
+
+"Color" and "Eye color" both gained a 13th swatch: a real color picker
+(native `<input type="color">`, restyled to match the round swatch look)
+instead of being limited to the 12 presets. Picking a custom color works
+everywhere the preset colors already did — main preview, every swatch
+preview, GIF export — since `KoinkBlob`'s `color`/`eyeColor` props now
+accept any hex string, not just the 12 known IDs (unrecognized strings
+are treated as the hex value directly, which is exactly what the native
+picker returns).
+
+### Added — Arabic, kept explicitly left-to-right
+
+A third language option, `ar`, next to English and Chinese — picked with
+no `dir="rtl"` applied anywhere based on locale, per the explicit ask.
+Two things worth being precise about:
+
+- **All 73 of Companion's own UI strings** (tabs, panel names, every
+  shape/color/expression/state label, every button and dialog) are now
+  routed through the same `t()` translation system Studio already used —
+  previously Companion's UI was 100% hardcoded English and didn't respond
+  to the language switcher *at all*, regardless of which language was
+  selected. That's now fixed for both Chinese and Arabic, verified by the
+  same kind of programmatic cross-check used for the round-5 language
+  audit (every `t()` call site and every label-map value, checked against
+  both dictionaries — zero gaps).
+- **Studio's own much larger existing string set is not fully mirrored
+  into Arabic** — only Chinese has that level of coverage (it shipped
+  with the original vendored project). Untranslated Studio strings in
+  Arabic fall back to English, the same graceful mechanism already
+  documented for any locale's own gaps (like species names in every
+  language). Full Arabic parity with Studio's ~800-entry dictionary is
+  real, additional translation work, not done this round.
+
+Structural note: adding a third language required splitting `App.tsx`
+into an outer `App` (just wraps `AvatarLocaleProvider`) and an inner
+`AppShell` (everything else) — a component can't call `useAvatarLocale()`
+for content it renders while also being the one creating that same
+Provider in the same render. The tab labels needed translating, so this
+split was necessary, not stylistic.

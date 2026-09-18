@@ -59,8 +59,8 @@ async function svgMarkupToCanvas(markup: string, size: number, background: strin
 
 export interface GifExportOptions {
   shape: ShapeId
-  color: ColorId
-  eyeColor: ColorId | 'auto'
+  color: ColorId | string
+  eyeColor: ColorId | 'auto' | string
   expression: ExpressionId
   size: number
   fps: number
@@ -81,11 +81,11 @@ export interface GifExportOptions {
 export async function exportGif(options: GifExportOptions): Promise<Blob> {
   const shapeRadii = SHAPE_BY_ID.get(options.shape)?.radii ?? null
   const expr = EXPRESSION_BY_ID.get(options.expression) ?? null
-  const ink = COLOR_BY_ID.get(options.color)?.hex ?? '#0a0a0a'
+  const ink = COLOR_BY_ID.get(options.color as ColorId)?.hex ?? options.color
   const eyeFill =
     options.eyeColor === 'auto'
       ? relativeLuminance(ink) > 0.6 ? '#141014' : '#ffffff'
-      : COLOR_BY_ID.get(options.eyeColor)?.hex ?? '#ffffff'
+      : COLOR_BY_ID.get(options.eyeColor as ColorId)?.hex ?? options.eyeColor
   const background = options.background === 'white' ? '#ffffff' : null
 
   const initialState = options.source.kind === 'state' ? options.source.state : options.source.blocks[0]?.state ?? 'idle'

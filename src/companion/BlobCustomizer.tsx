@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
-import { SHAPES, COLORS, type ShapeId, type ColorId } from './engine/skins'
+import { SHAPES, COLORS, COLOR_BY_ID, type ShapeId, type ColorId } from './engine/skins'
 import { EXPRESSIONS, type ExpressionId } from './engine/expressions'
 import { KoinkBlob } from './KoinkBlob'
+import { useAvatarLocale } from '../engine/avatar-app/avatarLocale'
 
 const SHAPE_LABELS: Record<ShapeId, string> = {
   cercle: 'Circle',
@@ -50,13 +51,46 @@ const EXPRESSION_LABELS: Record<ExpressionId, string> = {
 
 export interface BlobCustomizerProps {
   shape: ShapeId
-  color: ColorId
-  eyeColor: ColorId | 'auto'
+  color: ColorId | string
+  eyeColor: ColorId | 'auto' | string
   expression: ExpressionId
   onShapeChange: (shape: ShapeId) => void
-  onColorChange: (color: ColorId) => void
-  onEyeColorChange: (color: ColorId | 'auto') => void
+  onColorChange: (color: ColorId | string) => void
+  onEyeColorChange: (color: ColorId | 'auto' | string) => void
   onExpressionChange: (expression: ExpressionId) => void
+}
+
+/**
+ * The "anything else" swatch: a native color picker styled to match the
+ * other round swatches. Native `<input type="color">` gives a real OS/
+ * browser color picker for free — no custom picker UI to build, test, or
+ * get wrong. Its own inner swatch square is restyled round via the
+ * `::-webkit-color-swatch` pseudo-elements (WebView2 on Windows is
+ * Chromium-based, so this works reliably here).
+ */
+function CustomColorSwatch({
+  value,
+  onChange,
+  isCustomActive
+}: {
+  value: string
+  onChange: (hex: string) => void
+  isCustomActive: boolean
+}) {
+  const { t } = useAvatarLocale()
+  const pickerValue = /^#[0-9a-f]{6}$/i.test(value) ? value : '#808080'
+  return (
+    <input
+      type="color"
+      value={pickerValue}
+      onChange={e => onChange(e.target.value)}
+      title={t('Custom color')}
+      aria-label={t('Custom color')}
+      className={`h-11 w-11 cursor-pointer rounded-xl border-2 bg-transparent p-1 [&::-webkit-color-swatch]:rounded-lg [&::-webkit-color-swatch]:border-none [&::-webkit-color-swatch-wrapper]:rounded-lg [&::-webkit-color-swatch-wrapper]:p-0 ${
+        isCustomActive ? 'border-koink-ink dark:border-koink-paper' : 'border-transparent hover:border-koink-ink/20 dark:hover:border-koink-paper/30'
+      }`}
+    />
+  )
 }
 
 function SwatchGrid<T extends string>({
@@ -110,15 +144,16 @@ export function BlobCustomizer({
   onEyeColorChange,
   onExpressionChange
 }: BlobCustomizerProps) {
+  const { t } = useAvatarLocale()
   return (
     <div className="flex w-full max-w-xl flex-col gap-5 px-6">
       <section className="flex flex-col items-center gap-2">
-        <h3 className="font-display text-sm text-koink-ink/70 dark:text-koink-paper/70">Shape</h3>
+        <h3 className="font-display text-sm text-koink-ink/70 dark:text-koink-paper/70">{t('Shape')}</h3>
         <SwatchGrid
           items={SHAPES.map(s => s.id)}
           value={shape}
           onChange={onShapeChange}
-          label={id => SHAPE_LABELS[id]}
+          label={id => t(SHAPE_LABELS[id])}
           render={id => (
             <KoinkBlob shape={id} color={color} eyeColor={eyeColor} size={16} animate={false} followPointer={false} />
           )}
@@ -126,58 +161,68 @@ export function BlobCustomizer({
       </section>
 
       <section className="flex flex-col items-center gap-2">
-        <h3 className="font-display text-sm text-koink-ink/70 dark:text-koink-paper/70">Color</h3>
-        <SwatchGrid
-          items={COLORS.map(c => c.id)}
-          value={color}
-          onChange={onColorChange}
-          label={id => COLOR_LABELS[id]}
-          render={(id, active) => (
-            <span
-              className={`block h-7 w-7 rounded-full ${
-                active ? 'ring-2 ring-koink-ink ring-offset-2 ring-offset-white dark:ring-koink-paper dark:ring-offset-koink-ink' : ''
-              }`}
-              style={{ background: COLORS.find(c => c.id === id)?.hex }}
-            />
-          )}
-        />
+        <h3 className="font-display text-sm text-koink-ink/70 dark:text-koink-paper/70">{t('Color')}</h3>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <SwatchGrid
+            items={COLORS.map(c => c.id)}
+            value={COLOR_BY_ID.has(color as ColorId) ? (color as ColorId) : ('' as ColorId)}
+            onChange={onColorChange}
+            label={id => t(COLOR_LABELS[id])}
+            render={(id, active) => (
+              <span
+                className={`block h-7 w-7 rounded-full ${
+                  active ? 'ring-2 ring-koink-ink ring-offset-2 ring-offset-white dark:ring-koink-paper dark:ring-offset-koink-ink' : ''
+                }`}
+                style={{ background: COLORS.find(c => c.id === id)?.hex }}
+              />
+            )}
+          />
+          <CustomColorSwatch value={color} onChange={onColorChange} isCustomActive={!COLOR_BY_ID.has(color as ColorId)} />
+        </div>
       </section>
 
       <section className="flex flex-col items-center gap-2">
-        <h3 className="font-display text-sm text-koink-ink/70 dark:text-koink-paper/70">Eye color</h3>
-        <SwatchGrid
-          items={['auto', ...COLORS.map(c => c.id)] as Array<ColorId | 'auto'>}
-          value={eyeColor}
-          onChange={onEyeColorChange}
-          label={id => (id === 'auto' ? 'Auto (matches body)' : COLOR_LABELS[id])}
-          render={(id, active) =>
-            id === 'auto'
-              ? (
-                <span
-                  className="flex h-7 w-7 items-center justify-center rounded-full border border-koink-ink/20 text-[9px] font-semibold text-koink-ink dark:border-koink-paper/30 dark:text-koink-paper"
-                  style={{ background: 'conic-gradient(from 180deg, #fff 0 50%, #141014 50% 100%)' }}
-                >
-                  <span className="rounded-full bg-koink-paper px-1 py-0.5 leading-none dark:bg-koink-ink">A</span>
-                </span>
-              )
-              : (
-                <span
-                  className={`block h-7 w-7 rounded-full ${
-                    active ? 'ring-2 ring-koink-ink ring-offset-2 ring-offset-white dark:ring-koink-paper dark:ring-offset-koink-ink' : ''
-                  }`}
-                  style={{ background: COLORS.find(c => c.id === id)?.hex }}
-                />
-              )}
-        />
+        <h3 className="font-display text-sm text-koink-ink/70 dark:text-koink-paper/70">{t('Eye color')}</h3>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <SwatchGrid
+            items={['auto', ...COLORS.map(c => c.id)] as Array<ColorId | 'auto'>}
+            value={eyeColor === 'auto' || COLOR_BY_ID.has(eyeColor as ColorId) ? (eyeColor as ColorId | 'auto') : ('' as ColorId)}
+            onChange={onEyeColorChange}
+            label={id => (id === 'auto' ? t('Auto (matches body)') : t(COLOR_LABELS[id]))}
+            render={(id, active) =>
+              id === 'auto'
+                ? (
+                  <span
+                    className="flex h-7 w-7 items-center justify-center rounded-full border border-koink-ink/20 text-[9px] font-semibold text-koink-ink dark:border-koink-paper/30 dark:text-koink-paper"
+                    style={{ background: 'conic-gradient(from 180deg, #fff 0 50%, #141014 50% 100%)' }}
+                  >
+                    <span className="rounded-full bg-koink-paper px-1 py-0.5 leading-none dark:bg-koink-ink">A</span>
+                  </span>
+                )
+                : (
+                  <span
+                    className={`block h-7 w-7 rounded-full ${
+                      active ? 'ring-2 ring-koink-ink ring-offset-2 ring-offset-white dark:ring-koink-paper dark:ring-offset-koink-ink' : ''
+                    }`}
+                    style={{ background: COLORS.find(c => c.id === id)?.hex }}
+                  />
+                )}
+          />
+          <CustomColorSwatch
+            value={eyeColor === 'auto' ? '#808080' : eyeColor}
+            onChange={onEyeColorChange}
+            isCustomActive={eyeColor !== 'auto' && !COLOR_BY_ID.has(eyeColor as ColorId)}
+          />
+        </div>
       </section>
 
       <section className="flex flex-col items-center gap-2">
-        <h3 className="font-display text-sm text-koink-ink/70 dark:text-koink-paper/70">Expression</h3>
+        <h3 className="font-display text-sm text-koink-ink/70 dark:text-koink-paper/70">{t('Expression')}</h3>
         <SwatchGrid
           items={EXPRESSIONS.map(e => e.id)}
           value={expression}
           onChange={onExpressionChange}
-          label={id => EXPRESSION_LABELS[id]}
+          label={id => t(EXPRESSION_LABELS[id])}
           render={id => (
             <KoinkBlob
               shape={shape}

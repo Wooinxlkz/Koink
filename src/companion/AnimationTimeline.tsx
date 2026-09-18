@@ -22,6 +22,7 @@ import { exportGif, downloadBlob } from './gifExport'
 import { readStorage, writeStorage } from './cycleStorage'
 import { useCyclePlayback } from './useCyclePlayback'
 import { KoinkBlob } from './KoinkBlob'
+import { useAvatarLocale } from '../engine/avatar-app/avatarLocale'
 
 const STATE_LABELS: Partial<Record<StateId, string>> = {
   idle: 'Idle',
@@ -52,8 +53,8 @@ function loadInitialActiveId(cycles: Cycle[]): string {
 
 export interface AnimationTimelineProps {
   shape: ShapeId
-  color: ColorId
-  eyeColor: ColorId | 'auto'
+  color: ColorId | string
+  eyeColor: ColorId | 'auto' | string
   expression: ExpressionId
   onPreviewStateChange: (state: StateId) => void
 }
@@ -71,6 +72,7 @@ export interface AnimationTimelineProps {
  * vetted logic throughout, not a reimplementation.
  */
 export function AnimationTimeline({ shape, color, eyeColor, expression, onPreviewStateChange }: AnimationTimelineProps) {
+  const { t } = useAvatarLocale()
   const [cycles, setCycles] = useState<Cycle[]>(loadInitialCycles)
   const [activeId, setActiveId] = useState<string>(() => loadInitialActiveId(cycles))
   const [selectedIndex, setSelectedIndex] = useState(0)
@@ -173,7 +175,7 @@ export function AnimationTimeline({ shape, color, eyeColor, expression, onPrevie
   const createCycle = () => {
     if (cycles.length >= MAX_CYCLES) return
     const id = nextCycleId(cycles)
-    const name = uniqueName('New cycle', cycles)
+    const name = uniqueName(t('New cycle'), cycles)
     const fresh: Cycle = { id, name, blocks: [makeBlock('idle')] }
     setCycles(prev => [...prev, fresh])
     setActiveId(id)
@@ -184,7 +186,7 @@ export function AnimationTimeline({ shape, color, eyeColor, expression, onPrevie
     const target = cycles.find(c => c.id === id)
     if (!target) return
     setRenameTarget(target)
-    setRenameDraft(target.name || cycleDisplayName(target))
+    setRenameDraft(target.name || cycleDisplayName(target, t))
   }
 
   const confirmRename = () => {
@@ -218,7 +220,7 @@ export function AnimationTimeline({ shape, color, eyeColor, expression, onPrevie
         source: { kind: 'cycle', blocks: active.blocks },
         onProgress: setExportProgress
       })
-      downloadBlob(blob, `koink-${cycleDisplayName(active).toLowerCase().replace(/[^a-z0-9]+/g, '-')}.gif`)
+      downloadBlob(blob, `koink-${cycleDisplayName(active, t).toLowerCase().replace(/[^a-z0-9]+/g, '-')}.gif`)
     } finally {
       setExportProgress(null)
     }
@@ -235,7 +237,7 @@ export function AnimationTimeline({ shape, color, eyeColor, expression, onPrevie
           onClick={() => setMenuOpen(v => !v)}
           className="flex max-w-56 items-center gap-1.5 truncate rounded-full bg-koink-ink/10 px-3 py-1 text-sm font-medium text-koink-ink dark:bg-koink-paper/10 dark:text-koink-paper"
         >
-          {cycleDisplayName(active)}
+          {cycleDisplayName(active, t)}
           <span aria-hidden>▾</span>
         </button>
 
@@ -251,11 +253,11 @@ export function AnimationTimeline({ shape, color, eyeColor, expression, onPrevie
                   className="flex min-w-0 flex-1 items-center gap-2 truncate rounded-lg px-2 py-1.5 text-left text-koink-ink hover:bg-koink-ink/5 dark:text-koink-paper dark:hover:bg-koink-paper/10"
                 >
                   <span className="w-3 shrink-0">{c.id === activeId ? '✓' : ''}</span>
-                  <span className="truncate">{cycleDisplayName(c)}</span>
+                  <span className="truncate">{cycleDisplayName(c, t)}</span>
                 </button>
                 <button
                   onClick={() => renameCycle(c.id)}
-                  title="Rename"
+                  title={t('Rename')}
                   className="h-6 w-6 shrink-0 rounded-md text-koink-ink/50 hover:bg-koink-ink/5 dark:text-koink-paper/50 dark:hover:bg-koink-paper/10"
                 >
                   ✎
@@ -263,7 +265,7 @@ export function AnimationTimeline({ shape, color, eyeColor, expression, onPrevie
                 {cycles.length > 1 && (
                   <button
                     onClick={() => deleteCycle(c.id)}
-                    title="Delete"
+                    title={t('Delete')}
                     className="mr-1 h-6 w-6 shrink-0 rounded-md text-koink-ink/50 hover:bg-koink-ink/5 hover:text-red-500 dark:text-koink-paper/50 dark:hover:bg-koink-paper/10"
                   >
                     ✕
@@ -277,7 +279,7 @@ export function AnimationTimeline({ shape, color, eyeColor, expression, onPrevie
               disabled={cycles.length >= MAX_CYCLES}
               className="w-full rounded-lg px-2 py-1.5 text-left text-koink-ink hover:bg-koink-ink/5 disabled:opacity-40 dark:text-koink-paper dark:hover:bg-koink-paper/10"
             >
-              + New cycle
+              + {t('New cycle')}
             </button>
           </div>
         )}
@@ -285,7 +287,7 @@ export function AnimationTimeline({ shape, color, eyeColor, expression, onPrevie
         <button
           onClick={() => setPlaying(p => !p)}
           className="flex h-8 w-8 items-center justify-center rounded-full bg-koink-ink text-koink-paper dark:bg-koink-paper dark:text-koink-ink"
-          aria-label={playing ? 'Pause' : 'Play'}
+          aria-label={playing ? t('Pause') : t('Play')}
         >
           {playing ? '❚❚' : '▶'}
         </button>
@@ -293,10 +295,10 @@ export function AnimationTimeline({ shape, color, eyeColor, expression, onPrevie
         <button
           onClick={exportCycleGif}
           disabled={exportProgress != null}
-          title="Export this cycle as a GIF"
+          title={t('Export this cycle as a GIF')}
           className="flex h-8 items-center gap-1 rounded-full bg-koink-ink/10 px-3 text-xs font-medium text-koink-ink disabled:opacity-60 dark:bg-koink-paper/10 dark:text-koink-paper"
         >
-          {exportProgress != null ? `${Math.round(exportProgress * 100)}%` : 'Export GIF'}
+          {exportProgress != null ? `${Math.round(exportProgress * 100)}%` : t('Export GIF')}
         </button>
       </div>
 
@@ -347,23 +349,23 @@ export function AnimationTimeline({ shape, color, eyeColor, expression, onPrevie
           >
             <KoinkBlob state={block.state} shape={shape} color={color} eyeColor={eyeColor} size={16} animate={false} followPointer={false} />
             <span className="truncate text-[10px] font-medium text-koink-ink dark:text-koink-paper">
-              {STATE_LABELS[block.state] ?? block.state}
+              {t(STATE_LABELS[block.state] ?? block.state)}
             </span>
             <span className="text-[10px] text-koink-ink/50 dark:text-koink-paper/50">{block.duration.toFixed(1)}s</span>
             <div className="flex gap-0.5">
-              <IconButton label="Shorter" onClick={() => changeDuration(i, -STEP)}>
+              <IconButton label={t('Shorter')} onClick={() => changeDuration(i, -STEP)}>
                 −
               </IconButton>
-              <IconButton label="Longer" onClick={() => changeDuration(i, STEP)}>
+              <IconButton label={t('Longer')} onClick={() => changeDuration(i, STEP)}>
                 +
               </IconButton>
-              <IconButton label="Move earlier" onClick={() => reorder(i, i - 1)} disabled={i === 0}>
+              <IconButton label={t('Move earlier')} onClick={() => reorder(i, i - 1)} disabled={i === 0}>
                 ←
               </IconButton>
-              <IconButton label="Move later" onClick={() => reorder(i, i + 1)} disabled={i === active.blocks.length - 1}>
+              <IconButton label={t('Move later')} onClick={() => reorder(i, i + 1)} disabled={i === active.blocks.length - 1}>
                 →
               </IconButton>
-              <IconButton label="Remove" onClick={() => removeBlock(i)} disabled={active.blocks.length <= 1}>
+              <IconButton label={t('Remove')} onClick={() => removeBlock(i)} disabled={active.blocks.length <= 1}>
                 ✕
               </IconButton>
             </div>
@@ -377,7 +379,7 @@ export function AnimationTimeline({ shape, color, eyeColor, expression, onPrevie
                 e.preventDefault()
                 beginResize(i, e.clientX)
               }}
-              title="Drag to change duration"
+              title={t('Drag to change duration')}
               className={`absolute -right-0.5 top-0 h-full w-2 cursor-ew-resize rounded-r-xl ${
                 resizingIndex === i ? 'bg-koink-ink/30 dark:bg-koink-paper/30' : 'hover:bg-koink-ink/10 dark:hover:bg-koink-paper/10'
               }`}
@@ -393,10 +395,10 @@ export function AnimationTimeline({ shape, color, eyeColor, expression, onPrevie
             key={id}
             onClick={() => addBlock(id)}
             disabled={active.blocks.length >= 200}
-            title={`Add ${STATE_LABELS[id] ?? id}`}
+            title={`${t('Add')} ${t(STATE_LABELS[id] ?? id)}`}
             className="rounded-full bg-koink-ink/10 px-2.5 py-1 text-[11px] font-medium text-koink-ink hover:bg-koink-ink/20 disabled:opacity-40 dark:bg-koink-paper/10 dark:text-koink-paper dark:hover:bg-koink-paper/20"
           >
-            + {STATE_LABELS[id] ?? id}
+            + {t(STATE_LABELS[id] ?? id)}
           </button>
         ))}
       </div>
@@ -410,7 +412,7 @@ export function AnimationTimeline({ shape, color, eyeColor, expression, onPrevie
             onClick={e => e.stopPropagation()}
             className="flex w-72 flex-col gap-3 rounded-2xl bg-koink-paper p-4 shadow-koink dark:bg-koink-ink-soft"
           >
-            <h3 className="font-display text-sm text-koink-ink dark:text-koink-paper">Rename cycle</h3>
+            <h3 className="font-display text-sm text-koink-ink dark:text-koink-paper">{t('Rename cycle')}</h3>
             <input
               autoFocus
               value={renameDraft}
@@ -427,14 +429,14 @@ export function AnimationTimeline({ shape, color, eyeColor, expression, onPrevie
                 onClick={() => setRenameTarget(null)}
                 className="rounded-full px-3 py-1 text-sm text-koink-ink/60 hover:bg-koink-ink/5 dark:text-koink-paper/60 dark:hover:bg-koink-paper/10"
               >
-                Cancel
+                {t('Cancel')}
               </button>
               <button
                 onClick={confirmRename}
                 disabled={renameDraft.trim() === ''}
                 className="rounded-full bg-koink-ink px-4 py-1 text-sm text-koink-paper disabled:opacity-40 dark:bg-koink-paper dark:text-koink-ink"
               >
-                Save
+                {t('Save')}
               </button>
             </div>
           </div>
@@ -444,8 +446,8 @@ export function AnimationTimeline({ shape, color, eyeColor, expression, onPrevie
   )
 }
 
-function cycleDisplayName(cycle: Cycle): string {
-  return cycle.name.trim() !== '' ? cycle.name : 'Default cycle'
+function cycleDisplayName(cycle: Cycle, t: (text: string) => string): string {
+  return cycle.name.trim() !== '' ? cycle.name : t('Default cycle')
 }
 
 function IconButton({

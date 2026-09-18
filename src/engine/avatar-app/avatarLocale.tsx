@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 
-export type AvatarLocale = 'en' | 'zh-Hans'
+export type AvatarLocale = 'en' | 'zh-Hans' | 'ar'
 
 export const AVATAR_LOCALES: readonly {
   readonly id: AvatarLocale
@@ -9,6 +9,7 @@ export const AVATAR_LOCALES: readonly {
   readonly nativeLabel: string
 }[] = [
   { id: 'zh-Hans', label: 'Simplified Chinese', nativeLabel: '简体中文' },
+  { id: 'ar', label: 'Arabic', nativeLabel: 'العربية' },
   { id: 'en', label: 'English', nativeLabel: 'English' }
 ]
 
@@ -759,17 +760,173 @@ const ZH_HANS_TRANSLATIONS: Readonly<Record<string, string>> = {
   'Thickness': '粗细',
   'Triangle': '三角形',
   'Untitled animation': '未命名动画',
-  'Width': '宽度'
+  'Width': '宽度',
+  'Amber': '琥珀色',
+  'Angry': '生气',
+  'Animations': '动画',
+  'Attentive': '专注',
+  'Auto (matches body)': '自动（匹配身体）',
+  'Blue': '蓝色',
+  'Brown': '棕色',
+  'Burst': '爆发',
+  'Comet': '彗星',
+  'Confused': '困惑',
+  'Cream': '奶油色',
+  'Curious': '好奇',
+  'Custom color': '自定义颜色',
+  'Customize': '自定义',
+  'Default cycle': '默认循环',
+  'Droplet': '水滴',
+  'Egg': '蛋形',
+  'Excited': '兴奋',
+  'Exclaim': '惊叹',
+  'Export GIF': '导出 GIF',
+  'Export current state as GIF': '将当前状态导出为 GIF',
+  'Expression': '表情',
+  'Eye color': '眼睛颜色',
+  'Follow cursor': '跟随光标',
+  'Green': '绿色',
+  'Grey': '灰色',
+  'Hexagon': '六边形',
+  'Home': '首页',
+  'Idle': '待机',
+  'Ink': '墨黑',
+  'Laughing': '大笑',
+  'Longer': '延长',
+  'Move earlier': '提前',
+  'Move later': '推后',
+  'Neutral': '中性',
+  'New cycle': '新建循环',
+  'Notify': '提醒',
+  'Orange': '橙色',
+  'Orbit': '环绕',
+  'Pebble': '鹅卵石',
+  'Pink': '粉色',
+  'Play': '玩耍',
+  'Proud': '自豪',
+  'Red': '红色',
+  'Remove': '移除',
+  'Rename': '重命名',
+  'Rename cycle': '重命名循环',
+  'Sad': '悲伤',
+  'Save': '保存',
+  'Scared': '害怕',
+  'Settings': '设置',
+  'Shorter': '缩短',
+  'Shy': '害羞',
+  'Sleep': '睡眠',
+  'Squircle': '方圆形',
+  'Studio': '工作室',
+  'Suspicious': '怀疑',
+  'Thinking': '思考中',
+  'Turquoise': '青绿色',
+  'Unimpressed': '不以为然',
+  'Violet': '紫罗兰色',
+  'Pause': '暂停',
+  'Add': '添加',
+  'Export this cycle as a GIF': '将此循环导出为 GIF',
+  'Drag to change duration': '拖动以更改时长',
+}
+
+// Arabic UI text — kept left-to-right throughout (Koink's own explicit
+// choice, not a layout limitation): no `dir="rtl"` is applied anywhere
+// based on locale. Full coverage of Companion's own strings (added
+// alongside this locale); Studio's much larger existing string set
+// (the ZH_HANS_TRANSLATIONS dictionary above) is not fully mirrored
+// here yet — untranslated strings fall back to English, the same
+// mechanism already in place for any locale's own gaps.
+const AR_TRANSLATIONS: Readonly<Record<string, string>> = {
+  'Alert': 'تنبيه',
+  'Amber': 'كهرماني',
+  'Angry': 'غاضب',
+  'Animations': 'الرسوم المتحركة',
+  'Attentive': 'منتبه',
+  'Auto (matches body)': 'تلقائي (يطابق الجسم)',
+  'Blue': 'أزرق',
+  'Brown': 'بني',
+  'Burst': 'انفجار',
+  'Cancel': 'إلغاء',
+  'Capsule': 'كبسولة',
+  'Circle': 'دائرة',
+  'Cloud': 'سحابة',
+  'Color': 'اللون',
+  'Comet': 'مذنب',
+  'Confused': 'مرتبك',
+  'Cream': 'كريمي',
+  'Curious': 'فضولي',
+  'Custom color': 'لون مخصص',
+  'Customize': 'تخصيص',
+  'Default cycle': 'الدورة الافتراضية',
+  'Droplet': 'قطرة',
+  'Egg': 'بيضة',
+  'Excited': 'متحمس',
+  'Exclaim': 'تعجب',
+  'Export GIF': 'تصدير GIF',
+  'Export current state as GIF': 'تصدير الحالة الحالية كـ GIF',
+  'Expression': 'التعبير',
+  'Eye color': 'لون العين',
+  'Follow cursor': 'تتبع المؤشر',
+  'Green': 'أخضر',
+  'Grey': 'رمادي',
+  'Happy': 'سعيد',
+  'Hexagon': 'سداسي',
+  'Home': 'الرئيسية',
+  'Idle': 'خامل',
+  'Ink': 'حبري',
+  'Laughing': 'يضحك',
+  'Longer': 'أطول',
+  'Move earlier': 'تحريك للأمام',
+  'Move later': 'تحريك للخلف',
+  'Neutral': 'محايد',
+  'New cycle': 'دورة جديدة',
+  'Notify': 'إشعار',
+  'Orange': 'برتقالي',
+  'Orbit': 'مدار',
+  'Pebble': 'حصاة',
+  'Pink': 'وردي',
+  'Play': 'لعب',
+  'Proud': 'فخور',
+  'Red': 'أحمر',
+  'Remove': 'إزالة',
+  'Rename': 'إعادة تسمية',
+  'Rename cycle': 'إعادة تسمية الدورة',
+  'Sad': 'حزين',
+  'Save': 'حفظ',
+  'Scared': 'خائف',
+  'Settings': 'الإعدادات',
+  'Shape': 'الشكل',
+  'Shorter': 'أقصر',
+  'Shy': 'خجول',
+  'Sleep': 'نوم',
+  'Sleepy': 'نعسان',
+  'Squircle': 'مربع دائري',
+  'Studio': 'الاستوديو',
+  'Surprised': 'مندهش',
+  'Suspicious': 'مرتاب',
+  'Thinking': 'يفكر',
+  'Triangle': 'مثلث',
+  'Turquoise': 'فيروزي',
+  'Unimpressed': 'غير منبهر',
+  'Violet': 'بنفسجي',
+  'Wink': 'غمزة',
+  'Pause': 'إيقاف مؤقت',
+  'Add': 'إضافة',
+  'Export this cycle as a GIF': 'تصدير هذه الدورة كـ GIF',
+  'Drag to change duration': 'اسحب لتغيير المدة',
+  'Delete': 'حذف',
 }
 
 export const normalizeAvatarLocale = (value: string | null | undefined): AvatarLocale | null => {
   if (value === 'en') return 'en'
   if (value === 'zh-Hans' || value === 'zh-CN' || value?.toLowerCase().startsWith('zh')) return 'zh-Hans'
+  if (value === 'ar' || value?.toLowerCase().startsWith('ar')) return 'ar'
   return null
 }
 
 export const translateAvatarText = (locale: AvatarLocale, text: string) => {
-  return locale === 'zh-Hans' ? ZH_HANS_TRANSLATIONS[text] ?? text : text
+  if (locale === 'zh-Hans') return ZH_HANS_TRANSLATIONS[text] ?? text
+  if (locale === 'ar') return AR_TRANSLATIONS[text] ?? text
+  return text
 }
 
 const getInitialAvatarLocale = (): AvatarLocale => {

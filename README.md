@@ -4,16 +4,17 @@ A small ink-blob desktop companion for Windows, built with Tauri (Rust) +
 React + Tailwind + bun (same tooling as our other Tauri app).
 
 One window, three modes, switched with a small floating pill at the
-top-center (theme toggle and language switcher live right next to it,
-shared across all three):
+top-center (theme toggle and language switcher — English, Chinese, Arabic,
+kept explicitly left-to-right — live right next to it, shared across all
+three, and fully translated for both Home/Studio and Companion):
 
 - **Home** — the app's front door: Studio's real species/breed gallery
   (the same screen Studio itself opens into, see below), including a live
   Companion tile in that grid. Not a separate simplified page anymore.
 - **Companion** — the morphing mascot in its own real workspace (a left
   sidebar rail, like Studio's), not just floating controls: Customize
-  (shape × 8, color × 12, eye color × 12 + auto, expression × 16 — all
-  live previews of the actual engine, see
+  (shape × 8, color × 12 + a custom color picker, eye color × 12 + auto +
+  custom, expression × 16 — all live previews of the actual engine, see
   `src/companion/BlobCustomizer.tsx`), Animations (a real cycle/timeline
   editor — build named sequences of states with custom durations, not a
   flat list of 14 buttons, see `src/companion/AnimationTimeline.tsx`), and
@@ -37,7 +38,7 @@ height above it throws that off).
 
 ## Status
 
-`v0.1.8`. Windows is the only build target for now (see
+`v0.1.9`. Windows is the only build target for now (see
 `src-tauri/tauri.conf.json`'s `bundle.targets`).
 
 ## Getting started
@@ -88,9 +89,14 @@ layout, branding, packaging) is Koink's own.
 - Species/breed names in Studio (Bear, Tiger, Panda, etc.) always display
   in English regardless of language — the original app generates these
   from internal IDs rather than passing them through translation, so
-  there's no dictionary entry to add. Everything else in the UI is fully
-  covered in both languages (verified by diffing every `t()` call site
-  against the dictionary programmatically, not by spot-checking).
+  there's no dictionary entry to add.
+- Language coverage differs by area: Companion's own UI (tabs, panels,
+  every shape/color/expression/state label) is fully covered in all three
+  languages (English, Chinese, Arabic — verified programmatically, not by
+  spot-checking). Studio's much larger, separate string set has full
+  Chinese coverage (shipped with the original project) but only partial
+  Arabic — untranslated strings there fall back to English, same as any
+  locale's own gaps elsewhere.
 - The bottom-right rainbow ring in Studio isn't ours — it's the original
   app's own camera-orientation gizmo (`AvatarOrientationControl.tsx`); drag
   it to rotate the avatar's view.

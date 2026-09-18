@@ -28,15 +28,15 @@ export interface KoinkBlobProps {
   state?: StateId
   /** body shape preset (defaults to the round 'cercle') */
   shape?: ShapeId
-  /** ink color preset (defaults to 'encre') */
-  color?: ColorId
+  /** ink color: one of the 12 presets, or any hex string (e.g. from a custom color picker) */
+  color?: ColorId | string
   /**
-   * eye color: any of the 12 body colors, or 'auto' (default) — auto picks
-   * a dark or light eye color based on the body color's own relative
-   * luminance, so eyes stay visible on light bodies like 'creme' instead
-   * of always being white.
+   * eye color: one of the 12 body colors, any hex string, or 'auto'
+   * (default) — auto picks a dark or light eye color based on the body
+   * color's own relative luminance, so eyes stay visible on light bodies
+   * like 'creme' instead of always being white.
    */
-  eyeColor?: ColorId | 'auto'
+  eyeColor?: ColorId | 'auto' | string
   /** rest-look expression (defaults to 'neutre'/neutral) */
   expression?: ExpressionId
   /** viewBox radius in px; the component itself is responsive via CSS */
@@ -62,7 +62,7 @@ export interface KoinkBlobProps {
 export function KoinkBlob({
   state = 'idle',
   shape = DEFAULT_SHAPE as ShapeId,
-  color = DEFAULT_COLOR as ColorId,
+  color = DEFAULT_COLOR as string,
   eyeColor = 'auto',
   expression,
   size = 120,
@@ -165,15 +165,15 @@ export function KoinkBlob({
     }
   }, [followPointer, animate])
 
-  const ink = COLOR_BY_ID.get(color)?.hex ?? '#0a0a0a'
+  const ink = COLOR_BY_ID.get(color as ColorId)?.hex ?? color
   // 'creme' and similarly light body colors leave white eyes almost
   // invisible — 'auto' (the default) picks a dark or light eye color from
   // the body color's own relative luminance instead of always using
-  // white; a specific eyeColor overrides that entirely.
+  // white; a specific eyeColor (preset or custom hex) overrides that.
   const eyeFill =
     eyeColor === 'auto'
       ? relativeLuminance(ink) > 0.6 ? '#141014' : '#ffffff'
-      : COLOR_BY_ID.get(eyeColor)?.hex ?? '#ffffff'
+      : COLOR_BY_ID.get(eyeColor as ColorId)?.hex ?? eyeColor
   const viewSize = size * 2
 
   return (

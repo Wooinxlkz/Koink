@@ -3,7 +3,7 @@ import { CompanionWorkspace } from './companion/CompanionWorkspace'
 import type { StateId } from './companion/engine/states'
 import { DEFAULT_SHAPE, DEFAULT_COLOR, type ShapeId, type ColorId } from './companion/engine/skins'
 import { DEFAULT_EXPRESSION, type ExpressionId } from './companion/engine/expressions'
-import { AvatarLocaleProvider } from './engine/avatar-app/avatarLocale'
+import { AvatarLocaleProvider, useAvatarLocale } from './engine/avatar-app/avatarLocale'
 import { HomeHeaderActions } from './engine/avatar-app/HomeHeaderActions'
 
 // Studio is the vendored avatar editor — tens of thousands of lines across
@@ -79,76 +79,87 @@ const TABS: Array<{ id: Mode; label: string; glyph: (active: boolean) => JSX.Ele
  * Root still sees the full window either way.
  */
 export function App() {
+  // AppShell is a separate component (not just this body inlined) because
+  // it needs useAvatarLocale() for the tab labels below — and a component
+  // can't consume a context it creates itself in the same render, only one
+  // rendered as that provider's *child* can. Wrapping here, consuming there.
+  return (
+    <AvatarLocaleProvider>
+      <AppShell />
+    </AvatarLocaleProvider>
+  )
+}
+
+function AppShell() {
+  const { t } = useAvatarLocale()
   const [mode, setMode] = useState<Mode>('home')
   const [state, setState] = useState<StateId>('idle')
   const [shape, setShape] = useState<ShapeId>(DEFAULT_SHAPE as ShapeId)
-  const [color, setColor] = useState<ColorId>(DEFAULT_COLOR as ColorId)
-  const [eyeColor, setEyeColor] = useState<ColorId | 'auto'>('auto')
+  const [color, setColor] = useState<ColorId | string>(DEFAULT_COLOR as ColorId)
+  const [eyeColor, setEyeColor] = useState<ColorId | 'auto' | string>('auto')
   const [expression, setExpression] = useState<ExpressionId>(DEFAULT_EXPRESSION as ExpressionId)
   const [followPointer, setFollowPointer] = useState(true)
 
   return (
-    <AvatarLocaleProvider>
-      <div className="relative h-full w-full">
-        {mode === 'home' && (
-          <div className="h-full w-full">
-            <Suspense fallback={<StudioLoading />}>
-              <Root onOpenCompanion={() => setMode('companion')} startAtHome />
-            </Suspense>
-          </div>
-        )}
+    <div className="relative h-full w-full">
+      {mode === 'home' && (
+        <div className="h-full w-full">
+          <Suspense fallback={<StudioLoading />}>
+            <Root onOpenCompanion={() => setMode('companion')} startAtHome />
+          </Suspense>
+        </div>
+      )}
 
-        {mode === 'companion' && (
-          <CompanionWorkspace
-            state={state}
-            onStateChange={setState}
-            shape={shape}
-            onShapeChange={setShape}
-            color={color}
-            onColorChange={setColor}
-            eyeColor={eyeColor}
-            onEyeColorChange={setEyeColor}
-            expression={expression}
-            onExpressionChange={setExpression}
-            followPointer={followPointer}
-            onFollowPointerChange={setFollowPointer}
-          />
-        )}
+      {mode === 'companion' && (
+        <CompanionWorkspace
+          state={state}
+          onStateChange={setState}
+          shape={shape}
+          onShapeChange={setShape}
+          color={color}
+          onColorChange={setColor}
+          eyeColor={eyeColor}
+          onEyeColorChange={setEyeColor}
+          expression={expression}
+          onExpressionChange={setExpression}
+          followPointer={followPointer}
+          onFollowPointerChange={setFollowPointer}
+        />
+      )}
 
-        {mode === 'studio' && (
-          <div className="h-full w-full">
-            <Suspense fallback={<StudioLoading />}>
-              <Root onOpenCompanion={() => setMode('companion')} startInEditor />
-            </Suspense>
-          </div>
-        )}
+      {mode === 'studio' && (
+        <div className="h-full w-full">
+          <Suspense fallback={<StudioLoading />}>
+            <Root onOpenCompanion={() => setMode('companion')} startInEditor />
+          </Suspense>
+        </div>
+      )}
 
-        {/* Floating top bar — fixed, so it never steals flow height from
-            Studio's own 100vh-based layout (see the comment above). Mode
-            switcher + theme/language controls grouped together, visible in
-            every mode (previously theme/language only existed inside
-            Studio's own Home page). */}
-        <div className="fixed left-1/2 top-3 z-[999999] flex -translate-x-1/2 items-center gap-3">
-          <div className="flex gap-1 rounded-full bg-koink-ink/90 p-1 shadow-koink backdrop-blur">
-            {TABS.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setMode(tab.id)}
-                className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 font-display text-sm transition-colors ${
-                  mode === tab.id ? 'bg-koink-yellow text-koink-ink' : 'text-koink-paper/70 hover:text-koink-paper'
-                }`}
-              >
-                {tab.glyph(mode === tab.id)}
-                {tab.label}
-              </button>
-            ))}
-          </div>
+      {/* Floating top bar — fixed, so it never steals flow height from
+          Studio's own 100vh-based layout (see the comment above). Mode
+          switcher + theme/language controls grouped together, visible in
+          every mode (previously theme/language only existed inside
+          Studio's own Home page). */}
+      <div className="fixed left-1/2 top-3 z-[999999] flex -translate-x-1/2 items-center gap-3">
+        <div className="flex gap-1 rounded-full bg-koink-ink/90 p-1 shadow-koink backdrop-blur">
+          {TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setMode(tab.id)}
+              className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 font-display text-sm transition-colors ${
+                mode === tab.id ? 'bg-koink-yellow text-koink-ink' : 'text-koink-paper/70 hover:text-koink-paper'
+              }`}
+            >
+              {tab.glyph(mode === tab.id)}
+              {t(tab.label)}
+            </button>
+          ))}
+        </div>
 
-          <div className="avatar-home__header-actions">
-            <HomeHeaderActions />
-          </div>
+        <div className="avatar-home__header-actions">
+          <HomeHeaderActions />
         </div>
       </div>
-    </AvatarLocaleProvider>
+    </div>
   )
 }

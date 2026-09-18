@@ -3,6 +3,7 @@ import { KoinkBlob } from './KoinkBlob'
 import { BlobCustomizer } from './BlobCustomizer'
 import { AnimationTimeline } from './AnimationTimeline'
 import { exportGif, downloadBlob } from './gifExport'
+import { useAvatarLocale } from '../engine/avatar-app/avatarLocale'
 import type { StateId } from './engine/states'
 import { type ShapeId, type ColorId } from './engine/skins'
 import { type ExpressionId } from './engine/expressions'
@@ -47,10 +48,10 @@ export interface CompanionWorkspaceProps {
   onStateChange: (state: StateId) => void
   shape: ShapeId
   onShapeChange: (shape: ShapeId) => void
-  color: ColorId
-  onColorChange: (color: ColorId) => void
-  eyeColor: ColorId | 'auto'
-  onEyeColorChange: (color: ColorId | 'auto') => void
+  color: ColorId | string
+  onColorChange: (color: ColorId | string) => void
+  eyeColor: ColorId | 'auto' | string
+  onEyeColorChange: (color: ColorId | 'auto' | string) => void
   expression: ExpressionId
   onExpressionChange: (expression: ExpressionId) => void
   followPointer: boolean
@@ -77,6 +78,7 @@ export function CompanionWorkspace({
   followPointer,
   onFollowPointerChange
 }: CompanionWorkspaceProps) {
+  const { t } = useAvatarLocale()
   const [panel, setPanel] = useState<PanelId>('customize')
   const [stateExportProgress, setStateExportProgress] = useState<number | null>(null)
 
@@ -110,8 +112,8 @@ export function CompanionWorkspace({
           <button
             key={item.id}
             onClick={() => setPanel(item.id)}
-            title={item.label}
-            aria-label={item.label}
+            title={t(item.label)}
+            aria-label={t(item.label)}
             aria-current={panel === item.id ? 'page' : undefined}
             className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
               panel === item.id
@@ -165,7 +167,7 @@ export function CompanionWorkspace({
           {panel === 'settings' && (
             <div className="flex w-full max-w-xs flex-col gap-3 px-6">
               <label className="flex items-center justify-between rounded-xl bg-koink-ink/5 px-4 py-3 text-sm text-koink-ink dark:bg-koink-paper/5 dark:text-koink-paper">
-                Follow cursor
+                {t('Follow cursor')}
                 <input
                   type="checkbox"
                   checked={followPointer}
@@ -179,7 +181,7 @@ export function CompanionWorkspace({
                 disabled={stateExportProgress != null}
                 className="flex items-center justify-between rounded-xl bg-koink-ink/5 px-4 py-3 text-sm text-koink-ink transition-colors hover:bg-koink-ink/10 disabled:opacity-60 dark:bg-koink-paper/5 dark:text-koink-paper dark:hover:bg-koink-paper/10"
               >
-                Export current state as GIF
+                {t('Export current state as GIF')}
                 <span>{stateExportProgress != null ? `${Math.round(stateExportProgress * 100)}%` : '↓'}</span>
               </button>
             </div>
